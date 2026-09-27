@@ -43,3 +43,19 @@ class PBFriendRequest(ProtoStruct):
     info: Optional[FriendRequestInfo] = proto_field(1, default=None)
     notify: Optional[FriendRequestNotify] = proto_field(2, default=None)
     result: Optional[FriendRequestResult] = proto_field(3, default=None)
+
+
+class GrayTipTemplateParam(ProtoStruct):
+    name: str = proto_field(1, default="")
+    value: str = proto_field(2, default="")
+
+
+class GeneralGrayTipInfo(ProtoStruct):
+    busi_type: int = proto_field(1, default=0)
+    busi_id: int = proto_field(2, default=0)
+    ctrl_flag: int = proto_field(3, default=0)
+    c2c_type: int = proto_field(4, default=0)
+    service_type: int = proto_field(5, default=0)
+    templ_id: int = proto_field(6, default=0)
+    msg_templ_param: list[GrayTipTemplateParam] = proto_field(7, default_factory=list)
+    content: str = proto_field(8, default="")

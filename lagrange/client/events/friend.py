@@ -42,6 +42,18 @@ class FriendRequest(FriendEvent):
 
 
 @dataclass
+class FriendPoke(FriendEvent):
+    timestamp: int
+    sender_uid: str
+    target_uid: str
+    sender_uin: int = 0
+    target_uin: int = 0
+    action: str = ""
+    suffix: str = ""
+    action_img_url: str = ""
+
+
+@dataclass
 class FriendRequestFinished(FriendEvent):
     result: int  # 0 表示成功 / 已添加
 

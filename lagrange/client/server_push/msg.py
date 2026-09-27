@@ -5,7 +5,7 @@ import xml.etree.ElementTree as ET
 from typing import TYPE_CHECKING, TypeVar, Union
 
 from lagrange.client.message.decoder import parse_grp_msg, parse_friend_msg
-from lagrange.pb.message.msg_push import MsgPush
+from lagrange.pb.message.msg_push import MsgPush, MsgPushBody
 from lagrange.pb.status.group import (
     GroupRenamedBody,
     GroupSub16Head,
@@ -22,7 +22,7 @@ from lagrange.pb.status.group import (
     PBGroupInvite,
     PBSelfJoinInGroup,
 )
-from lagrange.pb.status.friend import PBFriendRecall, PBFriendRequest
+from lagrange.pb.status.friend import GeneralGrayTipInfo, PBFriendRecall, PBFriendRequest
 from lagrange.utils.binary.protobuf import proto_decode, ProtoStruct, proto_encode
 from lagrange.utils.binary.reader import Reader
 from lagrange.utils.operator import unpack_dict, timestamp
@@ -48,7 +48,7 @@ from ..events.group import (
     GroupAlbumUpdate,
     GroupMemberJoinedByInvite,
 )
-from ..events.friend import FriendRecall, FriendRequest, FriendRequestFinished, FriendAddNotify
+from ..events.friend import FriendAddNotify, FriendPoke, FriendRecall, FriendRequest, FriendRequestFinished
 from ..wtlogin.sso import SSOPacket
 from .log import logger
 
@@ -56,6 +56,39 @@ if TYPE_CHECKING:
     from lagrange.client.client import Client
 
 T = TypeVar("T", bound=ProtoStruct)
+
+
+def _parse_uin(value: str) -> int:
+    return int(value) if value.isdigit() else 0
+
+
+def _decode_friend_poke(pkg: MsgPushBody) -> FriendPoke | None:
+    if not pkg.message or not pkg.message.buf2:
+        return None
+    gray_tip = GeneralGrayTipInfo.decode(pkg.message.buf2)
+    if not gray_tip or gray_tip.busi_type != 12:
+        return None
+
+    params = {param.name: param.value for param in gray_tip.msg_templ_param if param.name}
+    sender_uid = params.get("uin_str1", "")
+    target_uid = params.get("uin_str2", "")
+    if not sender_uid or not target_uid:
+        return None
+
+    return FriendPoke(
+        from_uin=pkg.response_head.from_uin or 0,
+        from_uid=pkg.response_head.from_uid or "",
+        to_uin=pkg.response_head.to_uin or 0,
+        to_uid=pkg.response_head.to_uid or "",
+        timestamp=pkg.content_head.timestamp,
+        sender_uid=sender_uid,
+        target_uid=target_uid,
+        sender_uin=_parse_uin(sender_uid),
+        target_uin=_parse_uin(target_uid),
+        action=params.get("action_str") or params.get("alt_str1", ""),
+        suffix=params.get("suffix_str", ""),
+        action_img_url=params.get("action_img_url", ""),
+    )
 
 
 def unpack(buf2: bytes, decoder: type[T]) -> tuple[int, T]:
@@ -179,6 +212,8 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                 pb.info.random,
                 pb.info.time,
             )
+        elif sub_typ == 290:  # friend poke
+            return _decode_friend_poke(pkg)
         if sub_typ == 368:
             pass
             # print(pkg.message.encode().hex())
