@@ -105,10 +105,10 @@ class PBSsoInfoSyncRequest(ProtoStruct):
             current_active_stats=2,
             grp_last_msg_time=0,
             c2c_info=SsoC2cInfo.build(),
-            normal_cfg=NormalCfg(int_cfg=dict()),
+            normal_cfg=NormalCfg(int_cfg={}),
             register_info=PBRegisterRequest.build(app, device),
             unknown_f10=UnknownInfo(),
-            app_state=CurrentAppState.build()
+            app_state=CurrentAppState.build(),
         )
 
 

@@ -65,9 +65,7 @@ class CommonTlvBuilder(PacketBuilder):
         ip: bytes = bytes(4),
         save_password: bool = True,
     ) -> bytes:
-        key = hashlib.md5(
-            password_md5 + bytes(4) + cls().write_u32(uin).pack()
-        ).digest()
+        key = hashlib.md5(password_md5 + bytes(4) + cls().write_u32(uin).pack()).digest()
 
         body = (
             cls()
@@ -103,13 +101,7 @@ class CommonTlvBuilder(PacketBuilder):
         pic_size: int = 0,
         ret_type: int = 1,
     ) -> bytes:
-        return (
-            cls()
-            .write_u16(pic_type)
-            .write_u8(cap_type)
-            .write_u16(pic_size)
-            .write_u8(ret_type)
-        ).pack(0x107)
+        return (cls().write_u16(pic_type).write_u8(cap_type).write_u16(pic_size).write_u8(ret_type)).pack(0x107)
 
     @classmethod
     def t116(cls, sub_sigmap: int) -> bytes:
@@ -145,15 +137,11 @@ class CommonTlvBuilder(PacketBuilder):
         sim_info: bytes,
         apn: bytes = bytes(0),
     ) -> bytes:
-        return (
-            cls().write_bytes(sim_info, "u32", False).write_bytes(apn, "u32", False)
-        ).pack(0x141)
+        return (cls().write_bytes(sim_info, "u32", False).write_bytes(apn, "u32", False)).pack(0x141)
 
     @classmethod
     def t142(cls, apk_id: str, _version: int = 0) -> bytes:
-        return (cls().write_u16(_version).write_string(apk_id[:32], "u16", False)).pack(
-            0x142
-        )
+        return (cls().write_u16(_version).write_string(apk_id[:32], "u16", False)).pack(0x142)
 
     @classmethod
     def t144(cls, tgtgt_key: bytes, app_info: AppInfo, device: DeviceInfo) -> bytes:
@@ -173,10 +161,7 @@ class CommonTlvBuilder(PacketBuilder):
     @classmethod
     def t147(cls, app_id: int, pt_version: str, package_name: str) -> bytes:
         return (
-            cls()
-            .write_u32(app_id)
-            .write_string(pt_version, "u16", False)
-            .write_string(package_name, "u16", False)
+            cls().write_u32(app_id).write_string(pt_version, "u16", False).write_string(package_name, "u16", False)
         ).pack(0x147)
 
     @classmethod
@@ -193,11 +178,7 @@ class CommonTlvBuilder(PacketBuilder):
 
     @classmethod
     def t177(cls, sdk_version: str, build_time: int = 0) -> bytes:
-        return (
-            cls()
-            .write_struct("BI", 1, build_time)
-            .write_string(sdk_version, "u16", False)
-        ).pack(0x177)
+        return (cls().write_struct("BI", 1, build_time).write_string(sdk_version, "u16", False)).pack(0x177)
 
     @classmethod
     def t191(cls, can_web_verify: int = 0) -> bytes:
@@ -209,6 +190,4 @@ class CommonTlvBuilder(PacketBuilder):
 
     @classmethod
     def t521(cls, product_type: int = 0x13, product_desc: str = "basicim") -> bytes:
-        return (
-            cls().write_u32(product_type).write_string(product_desc, "u16", False)
-        ).pack(0x521)
+        return (cls().write_u32(product_type).write_string(product_desc, "u16", False)).pack(0x521)

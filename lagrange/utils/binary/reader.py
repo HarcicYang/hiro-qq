@@ -1,10 +1,10 @@
 import struct
-from typing import Any, Union
+from typing import Any
 
-from typing_extensions import TypeAlias, Literal
+from typing import TypeAlias, Literal
 
 LENGTH_PREFIX = Literal["u8", "u16", "u32", "u64"]
-BYTES_LIKE: TypeAlias = Union[bytes, bytearray, memoryview]
+BYTES_LIKE: TypeAlias = bytes | bytearray | memoryview
 
 
 class Reader:

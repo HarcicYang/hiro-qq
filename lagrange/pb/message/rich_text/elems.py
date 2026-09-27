@@ -1,5 +1,3 @@
-from typing import Optional
-
 from lagrange.utils.binary.protobuf import proto_field, ProtoStruct
 
 
@@ -10,15 +8,15 @@ class ImageReserveArgs(ProtoStruct):
 
 class Ptt(ProtoStruct):
     type: int = proto_field(1, default=4)
-    to_uin: Optional[int] = proto_field(2, default=None)
-    friend_file_key: Optional[str] = proto_field(3, default=None)
+    to_uin: int | None = proto_field(2, default=None)
+    friend_file_key: str | None = proto_field(3, default=None)
     md5: bytes = proto_field(4)
     name: str = proto_field(5)
     size: int = proto_field(6)
-    reserved: Optional[bytes] = proto_field(7, default=None)
-    file_id: Optional[int] = proto_field(8, default=None)  # available on grp msg
+    reserved: bytes | None = proto_field(7, default=None)
+    file_id: int | None = proto_field(8, default=None)  # available on grp msg
     is_valid: bool = proto_field(11, default=True)
-    group_file_key: Optional[str] = proto_field(18, default=None)
+    group_file_key: str | None = proto_field(18, default=None)
     time: int = proto_field(19)
     format: int = proto_field(29, default=1)
     pb_reserved: dict = proto_field(30, default={1: 0})
@@ -27,10 +25,10 @@ class Ptt(ProtoStruct):
 class Text(ProtoStruct):
     string: str = proto_field(1, default="")
     # link: str = proto_field(2, default="")
-    attr6_buf: Optional[bytes] = proto_field(3, default=None)
+    attr6_buf: bytes | None = proto_field(3, default=None)
     # attr7_buf: bytes = proto_field(4, default=bytes())
     # buf: bytes = proto_field(11, default=bytes())
-    pb_reserved: Optional[dict] = proto_field(12, default=None)
+    pb_reserved: dict | None = proto_field(12, default=None)
 
 
 class Face(ProtoStruct):
@@ -52,7 +50,7 @@ class NotOnlineImage(ProtoStruct):
     height: int = proto_field(8)
     width: int = proto_field(9)
     res_id: str = proto_field(10)
-    origin_path: Optional[str] = proto_field(15, default=None)
+    origin_path: str | None = proto_field(15, default=None)
     args: ImageReserveArgs = proto_field(34, default_factory=ImageReserveArgs)
 
 
@@ -82,8 +80,8 @@ class CustomFace(ProtoStruct):
     fileid: int = proto_field(7)
     file_type: int = proto_field(10)
     md5: bytes = proto_field(13)
-    thumb_url: Optional[str] = proto_field(14, default=None)
-    big_url: Optional[str] = proto_field(15, default=None)
+    thumb_url: str | None = proto_field(14, default=None)
+    big_url: str | None = proto_field(15, default=None)
     original_url: str = proto_field(16)
     # biz_type: int = proto_field(17)
     image_type: int = proto_field(20, default=1000)
@@ -103,7 +101,7 @@ class ExtraInfo(ProtoStruct):
 
 class SrcMsgArgs(ProtoStruct):
     # new_id: int = proto_field(3, default=None)
-    uid: Optional[str] = proto_field(6, default=None)
+    uid: str | None = proto_field(6, default=None)
 
 
 class SrcMsg(ProtoStruct):
@@ -111,7 +109,7 @@ class SrcMsg(ProtoStruct):
     uin: int = proto_field(2, default=0)
     timestamp: int = proto_field(3)
     elems: list[dict] = proto_field(5, default_factory=lambda: [{}])
-    pb_reserved: Optional[SrcMsgArgs] = proto_field(8, default=None)
+    pb_reserved: SrcMsgArgs | None = proto_field(8, default=None)
     to_uin: int = proto_field(10, default=0)
 
 
@@ -151,26 +149,26 @@ class VideoFile(ProtoStruct):
 
 
 class NotOnlineFile(ProtoStruct):
-    file_type: Optional[int] = proto_field(1)
+    file_type: int | None = proto_field(1)
     # sig: Optional[bytes] = proto_field(2)
-    file_uuid: Optional[str] = proto_field(3)
-    file_md5: Optional[bytes] = proto_field(4)
-    file_name: Optional[str] = proto_field(5)
-    file_size: Optional[int] = proto_field(6)
+    file_uuid: str | None = proto_field(3)
+    file_md5: bytes | None = proto_field(4)
+    file_name: str | None = proto_field(5)
+    file_size: int | None = proto_field(6)
     # note: Optional[bytes] = proto_field(7)
     # reserved: Optional[int] = proto_field(8)
-    subcmd: Optional[int] = proto_field(9)
+    subcmd: int | None = proto_field(9)
     # micro_cloud: Optional[int] = proto_field(10)
     # bytes_file_urls: Optional[list[bytes]] = proto_field(11)
     # download_flag: Optional[int] = proto_field(12)
-    danger_evel: Optional[int] = proto_field(50)
+    danger_evel: int | None = proto_field(50)
     # life_time: Optional[int] = proto_field(51)
     # upload_time: Optional[int] = proto_field(52)
     # abs_file_type: Optional[int] = proto_field(53)
     # client_type: Optional[int] = proto_field(54)
-    expire_time: Optional[int] = proto_field(55)
+    expire_time: int | None = proto_field(55)
     pb_reserve: bytes = proto_field(56)
-    file_hash: Optional[str] = proto_field(57)
+    file_hash: str | None = proto_field(57)
 
 
 class FileExtra(ProtoStruct):
@@ -208,7 +206,7 @@ class GreyTipsExtra(ProtoStruct):
 
 
 class PBGreyTips(ProtoStruct):
-    grey: Optional[GreyTipsExtra] = proto_field(101, default=None)
+    grey: GreyTipsExtra | None = proto_field(101, default=None)
 
     @classmethod
     def build(cls, content: str) -> "PBGreyTips":
@@ -222,25 +220,25 @@ class PBGreyTips(ProtoStruct):
 
 
 class GeneralFlags(ProtoStruct):
-    BubbleDiyTextId: Optional[int] = proto_field(1, default=None)
-    GroupFlagNew: Optional[int] = proto_field(2, default=None)
-    Uin: Optional[int] = proto_field(3, default=None)
-    RpId: Optional[bytes] = proto_field(4, default=None)
-    PrpFold: Optional[int] = proto_field(5, default=None)
-    LongTextFlag: Optional[int] = proto_field(6, default=None)
-    LongTextResId: Optional[str] = proto_field(7, default=None)
-    GroupType: Optional[int] = proto_field(8, default=None)
-    ToUinFlag: Optional[int] = proto_field(9, default=None)
-    GlamourLevel: Optional[int] = proto_field(10, default=None)
-    MemberLevel: Optional[int] = proto_field(11, default=None)
-    GroupRankSeq: Optional[int] = proto_field(12, default=None)
-    OlympicTorch: Optional[int] = proto_field(13, default=None)
-    BabyqGuideMsgCookie: Optional[bytes] = proto_field(14, default=None)
-    Uin32ExpertFlag: Optional[int] = proto_field(15, default=None)
-    BubbleSubId: Optional[int] = proto_field(16, default=None)
-    PendantId: Optional[int] = proto_field(17, default=None)
-    RpIndex: Optional[bytes] = proto_field(18, default=None)
-    PbReserve: Optional[PBGreyTips] = proto_field(19, default=None)
+    BubbleDiyTextId: int | None = proto_field(1, default=None)
+    GroupFlagNew: int | None = proto_field(2, default=None)
+    Uin: int | None = proto_field(3, default=None)
+    RpId: bytes | None = proto_field(4, default=None)
+    PrpFold: int | None = proto_field(5, default=None)
+    LongTextFlag: int | None = proto_field(6, default=None)
+    LongTextResId: str | None = proto_field(7, default=None)
+    GroupType: int | None = proto_field(8, default=None)
+    ToUinFlag: int | None = proto_field(9, default=None)
+    GlamourLevel: int | None = proto_field(10, default=None)
+    MemberLevel: int | None = proto_field(11, default=None)
+    GroupRankSeq: int | None = proto_field(12, default=None)
+    OlympicTorch: int | None = proto_field(13, default=None)
+    BabyqGuideMsgCookie: bytes | None = proto_field(14, default=None)
+    Uin32ExpertFlag: int | None = proto_field(15, default=None)
+    BubbleSubId: int | None = proto_field(16, default=None)
+    PendantId: int | None = proto_field(17, default=None)
+    RpIndex: bytes | None = proto_field(18, default=None)
+    PbReserve: PBGreyTips | None = proto_field(19, default=None)
 
 
 # class Markdown(ProtoStruct):
@@ -249,36 +247,36 @@ class GeneralFlags(ProtoStruct):
 
 class Permission(ProtoStruct):
     type: int = proto_field(1, default=0)
-    specify_role_ids: Optional[list[str]] = proto_field(2, default=None)
-    specify_user_ids: Optional[list[str]] = proto_field(3, default=None)
+    specify_role_ids: list[str] | None = proto_field(2, default=None)
+    specify_user_ids: list[str] | None = proto_field(3, default=None)
 
 
 class RenderData(ProtoStruct):
-    label: Optional[str] = proto_field(1, default=None)
-    visited_label: Optional[str] = proto_field(2, default=None)
+    label: str | None = proto_field(1, default=None)
+    visited_label: str | None = proto_field(2, default=None)
     style: int = proto_field(3, default=0)
 
 
 class Action(ProtoStruct):
-    type: Optional[int] = proto_field(1, default=None)
-    permission: Optional[Permission] = proto_field(2, default=None)
+    type: int | None = proto_field(1, default=None)
+    permission: Permission | None = proto_field(2, default=None)
     data: str = proto_field(5)
     reply: bool = proto_field(7, default=False)
     enter: bool = proto_field(8, default=False)
-    anchor: Optional[int] = proto_field(9, default=None)
-    unsupport_tips: Optional[str] = proto_field(4, default=None)
-    click_limit: Optional[int] = proto_field(3)  # deprecated
+    anchor: int | None = proto_field(9, default=None)
+    unsupport_tips: str | None = proto_field(4, default=None)
+    click_limit: int | None = proto_field(3)  # deprecated
     at_bot_show_channel_list: bool = proto_field(6, default=False)  # deprecated
 
 
 class Button(ProtoStruct):
-    id: Optional[str] = proto_field(1, default=None)
-    render_data: Optional[RenderData] = proto_field(2, default=None)
-    action: Optional[Action] = proto_field(3, default=None)
+    id: str | None = proto_field(1, default=None)
+    render_data: RenderData | None = proto_field(2, default=None)
+    action: Action | None = proto_field(3, default=None)
 
 
 class InlineKeyboardRow(ProtoStruct):
-    buttons: Optional[list[Button]] = proto_field(1, default=None)
+    buttons: list[Button] | None = proto_field(1, default=None)
 
 
 class InlineKeyboard(ProtoStruct):
@@ -286,7 +284,7 @@ class InlineKeyboard(ProtoStruct):
 
 
 class Keyboard(ProtoStruct):
-    content: Optional[list[InlineKeyboard]] = proto_field(1, default=None)
+    content: list[InlineKeyboard] | None = proto_field(1, default=None)
     bot_appid: int = proto_field(2)
 
 

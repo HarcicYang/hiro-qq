@@ -2,7 +2,6 @@ import struct
 from dataclasses import dataclass
 from datetime import datetime
 from enum import IntEnum
-from typing import Optional
 from lagrange.pb.service.group import GetInfoRspBody
 
 
@@ -71,8 +70,8 @@ class UserInfo:
 @dataclass
 class BotFriend:
     uin: int
-    uid: Optional[str] = None
-    nickname: Optional[str] = None
-    remark: Optional[str] = None
-    personal_sign: Optional[str] = None
-    qid: Optional[str] = None
+    uid: str | None = None
+    nickname: str | None = None
+    remark: str | None = None
+    personal_sign: str | None = None
+    qid: str | None = None

@@ -1,7 +1,6 @@
 import platform
 from dataclasses import dataclass
 from hashlib import md5
-from typing import Union
 
 from .serialize import JsonSerializer
 
@@ -14,7 +13,7 @@ class DeviceInfo(JsonSerializer):
     kernel_version: str
 
     @classmethod
-    def generate(cls, uin: Union[str, int]) -> "DeviceInfo":
+    def generate(cls, uin: str | int) -> "DeviceInfo":
         if isinstance(uin, int):
             uin = md5(str(uin).encode()).hexdigest()
 

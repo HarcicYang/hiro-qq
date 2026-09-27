@@ -1,5 +1,3 @@
-from typing import Optional
-
 from lagrange.utils.binary.protobuf import proto_field, ProtoStruct
 
 
@@ -39,10 +37,10 @@ class ExcitingFileEntry(ProtoStruct):
 
 
 class ExcitingBusiInfo(ProtoStruct):
-    bus_id: Optional[int] = proto_field(1, default=None)
+    bus_id: int | None = proto_field(1, default=None)
     sender_uin: int = proto_field(100, default=0)
-    receiver_uin: Optional[int] = proto_field(200, default=None)
-    group_code: Optional[int] = proto_field(400, default=None)
+    receiver_uin: int | None = proto_field(200, default=None)
+    group_code: int | None = proto_field(400, default=None)
 
 
 class FileUploadEntry(ProtoStruct):
@@ -56,6 +54,6 @@ class FileUploadEntry(ProtoStruct):
 class FileUploadExt(ProtoStruct):
     unknown1: int = proto_field(1, default=100)
     unknown2: int = proto_field(2, default=1)
-    unknown3: Optional[int] = proto_field(3, default=None)
+    unknown3: int | None = proto_field(3, default=None)
     entry: FileUploadEntry = proto_field(100)
-    unknown200: Optional[int] = proto_field(200, default=None)
+    unknown200: int | None = proto_field(200, default=None)

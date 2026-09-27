@@ -1,4 +1,5 @@
-from typing_extensions import Literal, Self
+from typing_extensions import Self
+from typing import Literal
 
 from lagrange.utils.binary.builder import BYTES_LIKE, Builder
 
@@ -39,7 +40,5 @@ class PacketBuilder(Builder):
         self._buffer += v
         return self
 
-    def write_string(
-        self, s: str, prefix: LENGTH_PREFIX = "u32", with_prefix: bool = True
-    ) -> Self:
+    def write_string(self, s: str, prefix: LENGTH_PREFIX = "u32", with_prefix: bool = True) -> Self:
         return self.write_bytes(s.encode(), prefix=prefix, with_prefix=with_prefix)

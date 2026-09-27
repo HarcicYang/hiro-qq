@@ -4,7 +4,8 @@ import random
 import struct
 from uuid import uuid4
 import zlib
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Any
+from collections.abc import Callable
 from collections.abc import Coroutine
 
 from lagrange.pb.message.heads import ContentHead, Forward, Grp, ResponseHead
@@ -63,12 +64,12 @@ if TYPE_CHECKING:
 
 
 async def build_message(
-    msg_chain: list[Element], compatible=True, forward_func: Optional[Callable[..., Coroutine[Any, Any, str]]] = None
+    msg_chain: list[Element], compatible=True, forward_func: Callable[..., Coroutine[Any, Any, str]] | None = None
 ) -> RichText:
     if not msg_chain:
         raise ValueError("Message chain is empty")
     msg_pb: list[Elems] = []
-    msg_ptt: Optional[Ptt] = None
+    msg_ptt: Ptt | None = None
     if not isinstance(msg_chain[0], Audio):
         for msg in msg_chain:
             if isinstance(msg, AtAll):
@@ -251,12 +252,15 @@ async def build_message(
                     "app": "com.tencent.multimsg",
                     "config": {"autosize": 1, "forward": 1, "round": 1, "type": "normal", "width": 300},
                     "desc": "[聊天记录]",
-                    "extra": f'{json.dumps({"filename":fileid,"tsum":len(msg.messages)})}\n',
+                    "extra": f"{json.dumps({'filename': fileid, 'tsum': len(msg.messages)})}\n",
                     "meta": {
                         "detail": {
                             "news": [
                                 {
-                                    "text": f'{forward_node.sender_nick}:{"".join(element.raw_text for element in forward_node.content)}'
+                                    "text": (
+                                        f"{forward_node.sender_nick}:"
+                                        f"{''.join(element.raw_text for element in forward_node.content)}"
+                                    )
                                 }
                                 for forward_node in msg.messages
                             ],
@@ -331,7 +335,7 @@ async def build_forward_msg(
 
 # it should be enterpoint
 async def _get_mulitmsg_resid(
-    client: "Client", forword_msg: MulitMsg, target: str = "", grp_id: Optional[int] = None
+    client: "Client", forword_msg: MulitMsg, target: str = "", grp_id: int | None = None
 ) -> str:
     body = await build_forward_msg(
         forword_msg,
@@ -348,7 +352,7 @@ async def _get_mulitmsg_resid(
 
 
 def get_resid_func(
-    client: "Client", target: str = "", grp_id: Optional[int] = None
+    client: "Client", target: str = "", grp_id: int | None = None
 ) -> Callable[..., Coroutine[Any, Any, str]]:
     async def wrap(forword_msg: MulitMsg):
         return await _get_mulitmsg_resid(client, forword_msg, target, grp_id)

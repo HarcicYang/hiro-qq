@@ -1,4 +1,3 @@
-from typing import Optional
 from lagrange.pb.message.msg_push import MsgPushBody
 from lagrange.utils.binary.protobuf.models import ProtoStruct, proto_field
 
@@ -7,7 +6,7 @@ class LongMsgCfg(ProtoStruct):
     sub_cmd: int = proto_field(1)
     client_type: int = proto_field(2, default=0)
     platform: int = proto_field(3, default=0)
-    proxy_type: Optional[int] = proto_field(4, default=None)
+    proxy_type: int | None = proto_field(4, default=None)
 
 
 class LongMsgRespResult(ProtoStruct):
@@ -26,7 +25,7 @@ class MulitMsgProperty(ProtoStruct):
 class LongMsgBody(ProtoStruct):
     f1: int = proto_field(1)  # grp 3,friend 1
     gid_or_uid: MulitMsgProperty = proto_field(2)
-    grp_id: Optional[int] = proto_field(3, default=None)
+    grp_id: int | None = proto_field(3, default=None)
     msg_content: bytes = proto_field(4)
 
     @classmethod
@@ -43,7 +42,7 @@ class LongMsgRsp(ProtoStruct):
     cfg: LongMsgCfg = proto_field(15)
 
     @classmethod
-    def build(cls, msg_content: bytes, target: str = "", grp_id: Optional[int] = None):
+    def build(cls, msg_content: bytes, target: str = "", grp_id: int | None = None):
         cfg = LongMsgCfg(sub_cmd=4, client_type=1, platform=7, proxy_type=0)
         if grp_id:
             return cls(msg_info=LongMsgBody.build_group(grp_id, msg_content), cfg=cfg)
@@ -72,7 +71,7 @@ class LongMsgActionBody(ProtoStruct):
 
 
 class LongMsgAction(ProtoStruct):
-    action_command: str = proto_field(1) # 接收时也可能是uniseq
+    action_command: str = proto_field(1)  # 接收时也可能是uniseq
     action_data: LongMsgActionBody = proto_field(2)
 
 

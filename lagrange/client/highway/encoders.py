@@ -50,9 +50,7 @@ def encode_highway_head(
     ext_info: bytes,
 ) -> HighwayTransReqHead:
     return HighwayTransReqHead(
-        msg_head=DataHighwayHead(
-            uin=str(uin), command=cmd, seq=seq, app_id=sub_app_id, command_id=cmd_id
-        ),
+        msg_head=DataHighwayHead(uin=str(uin), command=cmd, seq=seq, app_id=sub_app_id, command_id=cmd_id),
         seg_head=SegHead(
             file_size=file_size,
             data_offset=file_offset,
@@ -90,15 +88,11 @@ def encode_upload_img_req(
     if grp_id:
         scene_type = 2
         grp_info = GroupInfo(grp_id=grp_id)
-        grp_pb = bytes.fromhex(
-            "0800180020004a00500062009201009a0100aa010c080012001800200028003a00"
-        )
+        grp_pb = bytes.fromhex("0800180020004a00500062009201009a0100aa010c080012001800200028003a00")
     else:
         scene_type = 1
         c2c_info = C2CUserInfo(uid=uid)
-        c2c_pb = bytes.fromhex(
-            "0800180020004200500062009201009a0100a2010c080012001800200028003a00"
-        )
+        c2c_pb = bytes.fromhex("0800180020004200500062009201009a0100a2010c080012001800200028003a00")
 
     return NTV2RichMediaReq(
         req_head=MultiMediaReqHead(
@@ -140,9 +134,7 @@ def encode_upload_img_req(
     )
 
 
-def encode_audio_upload_req(
-    grp_id: int, uid: str, md5: bytes, sha1: bytes, size: int, time: int
-) -> NTV2RichMediaReq:
+def encode_audio_upload_req(grp_id: int, uid: str, md5: bytes, sha1: bytes, size: int, time: int) -> NTV2RichMediaReq:
     assert not (grp_id and uid)
     c2c_info = None
     grp_info = None
@@ -154,10 +146,7 @@ def encode_audio_upload_req(
         c2c_info = C2CUserInfo(uid=uid)
     return NTV2RichMediaReq(
         req_head=MultiMediaReqHead(
-            common=CommonHead(
-                req_id=4 if grp_id else 1,
-                cmd=100
-            ),
+            common=CommonHead(req_id=4 if grp_id else 1, cmd=100),
             scene=SceneInfo(
                 req_type=2,
                 bus_type=3,
@@ -211,23 +200,10 @@ def encode_audio_down_req(uuid: str, grp_id: int, uid: str):
 
     return NTV2RichMediaReq(
         req_head=MultiMediaReqHead(
-            common=CommonHead(
-                req_id=4 if grp_id else 1,
-                cmd=200
-            ),
-            scene=SceneInfo(
-                req_type=1,
-                bus_type=3,
-                scene_type=scene_type,
-                c2c=c2c_info,
-                grp=grp_info
-            ),
+            common=CommonHead(req_id=4 if grp_id else 1, cmd=200),
+            scene=SceneInfo(req_type=1, bus_type=3, scene_type=scene_type, c2c=c2c_info, grp=grp_info),
         ),
-        download=DownloadReq(
-            node=IndexNode(
-                file_uuid=uuid
-            )
-        ),
+        download=DownloadReq(node=IndexNode(file_uuid=uuid)),
     )
 
 
@@ -240,7 +216,7 @@ def encode_grp_img_download_req(grp_id: int, node: IndexNode) -> NTV2RichMediaRe
                 bus_type=1,
                 scene_type=2,
                 grp=GroupInfo(grp_id=grp_id),
-            )
+            ),
         ),
         download=DownloadReq(node=node),
     )
@@ -255,7 +231,7 @@ def encode_pri_img_download_req(uid: str, node: IndexNode) -> NTV2RichMediaReq:
                 bus_type=1,
                 scene_type=1,
                 c2c=C2CUserInfo(uid=uid),
-            )
+            ),
         ),
         download=DownloadReq(node=node),
     )
@@ -372,6 +348,7 @@ def encode_video_down_req(node: IndexNode, grp_id: int, uid: str):
         ),
         download=DownloadReq(node=download_node),
     )
+
 
 # def encode_video_upload_req(
 #         seq: int,

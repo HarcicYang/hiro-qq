@@ -5,14 +5,12 @@ import asyncio
 from io import BytesIO
 from typing import (
     BinaryIO,
-    Callable,
-    Optional,
-    Union,
     overload,
     Literal,
     TYPE_CHECKING,
     cast,
 )
+from collections.abc import Callable
 from collections.abc import Coroutine
 
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
@@ -103,9 +101,9 @@ class Client(BaseClient):
         app_info: AppInfo,
         device_info: DeviceInfo,
         sig_info: SigInfo,
-        sign_provider: Optional[Callable[[str, int, bytes], Coroutine[None, None, dict]]] = None,
+        sign_provider: Callable[[str, int, bytes], Coroutine[None, None, dict]] | None = None,
         use_ipv6: bool = True,
-        use_optimum: bool = True
+        use_optimum: bool = True,
     ):
         super().__init__(uin, app_info, device_info, sig_info, sign_provider, use_ipv6, use_optimum)
 
@@ -144,7 +142,7 @@ class Client(BaseClient):
         else:
             raise AssertionError("siginfo not found, you must login first")
 
-    async def login(self, password: str = "", qrcode_path: Optional[str] = None) -> bool:
+    async def login(self, password: str = "", qrcode_path: str | None = None) -> bool:
         try:
             if self._sig.temp_pwd:
                 rsp = await self.easy_login()
@@ -293,20 +291,22 @@ class Client(BaseClient):
     async def upload_friend_audio(self, voice: BinaryIO, uid: str) -> Audio:
         return await self._highway.upload_voice(voice, uid=uid)
 
-    async def upload_grp_video(self, file: BinaryIO, grp_id: int, thumb: Optional[BinaryIO] = None) -> Video:
+    async def upload_grp_video(self, file: BinaryIO, grp_id: int, thumb: BinaryIO | None = None) -> Video:
         return await self._highway.upload_video(file, gid=grp_id, thumb=thumb)
 
-    async def upload_friend_video(self, file: BinaryIO, uid: str, thumb: Optional[BinaryIO] = None) -> Video:
+    async def upload_friend_video(self, file: BinaryIO, uid: str, thumb: BinaryIO | None = None) -> Video:
         return await self._highway.upload_video(file, uid=uid, thumb=thumb)
 
-    async def upload_grp_file(self, file: BinaryIO, grp_id: int, target_directory: str = "/", file_name: Optional[str] = None) -> File:
+    async def upload_grp_file(
+        self, file: BinaryIO, grp_id: int, target_directory: str = "/", file_name: str | None = None
+    ) -> File:
         f = await self._highway.upload_group_file(file, grp_id, target_directory, file_name or "")
         if f.file_id is None:
             raise ValueError("group file id is missing")
         await self._highway.send_group_file(grp_id, f.file_id)
         return f
 
-    async def upload_friend_file(self, file: BinaryIO, uid: str, file_name: Optional[str] = None) -> File:
+    async def upload_friend_file(self, file: BinaryIO, uid: str, file_name: str | None = None) -> File:
         f = await self._highway.upload_private_file(file, uid, file_name or "")
         result = await self._send_file_msg_raw(f, uid)
         if result.ret_code:
@@ -367,7 +367,7 @@ class Client(BaseClient):
             (await self.send_oidb_svc(0xFE7, 4, PBGetGrpMemberInfoReq.build(grp_id, uid=uid).encode())).data
         )
 
-    async def get_grp_members(self, grp_id: int, next_key: Optional[str] = None) -> GetGrpMemberInfoRsp:
+    async def get_grp_members(self, grp_id: int, next_key: str | None = None) -> GetGrpMemberInfoRsp:
         """
         500 members per request,
         get next page: fill 'next_key' from GetGrpMemberInfoRsp.next_key
@@ -434,7 +434,7 @@ class Client(BaseClient):
         frist_send = GetFriendListRsp.decode(
             (await self.send_oidb_svc(0xFD4, 1, PBGetFriendListRequest().encode())).data
         )
-        properties: Optional[dict] = None
+        properties: dict | None = None
         if frist_send.next:
             nextuin_cache.append(frist_send.next)
         for raw in frist_send.friend_list:
@@ -540,7 +540,7 @@ class Client(BaseClient):
         if rsp.ret_code:
             raise AssertionError(rsp.ret_code, str(rsp.err_msg))
 
-    async def send_grp_reaction(self, grp_id: int, msg_seq: int, content: Union[str, int], is_cancel=False) -> None:
+    async def send_grp_reaction(self, grp_id: int, msg_seq: int, content: str | int, is_cancel=False) -> None:
         if isinstance(content, str):
             assert len(content) == 1, "content must be a emoji"
         rsp = await self.send_oidb_svc(
@@ -643,14 +643,12 @@ class Client(BaseClient):
             raise AssertionError(rsp.ret_code, rsp.err_msg)
 
     @overload
-    async def get_user_info(self, uid_or_uin: Union[str, int], /) -> UserInfo: ...
+    async def get_user_info(self, uid_or_uin: str | int, /) -> UserInfo: ...
 
     @overload
-    async def get_user_info(self, uid_or_uin: Union[list[str], list[int]], /) -> list[UserInfo]: ...
+    async def get_user_info(self, uid_or_uin: list[str] | list[int], /) -> list[UserInfo]: ...
 
-    async def get_user_info(
-        self, uid_or_uin: Union[str, int, list[str], list[int]], /
-    ) -> Union[UserInfo, list[UserInfo]]:
+    async def get_user_info(self, uid_or_uin: str | int | list[str] | list[int], /) -> UserInfo | list[UserInfo]:
         if isinstance(uid_or_uin, list):
             assert uid_or_uin, "empty uid or uin"
             userid = uid_or_uin

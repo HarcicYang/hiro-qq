@@ -51,9 +51,7 @@ class EllipticCurve:
         return self._pack_size
 
     def check_on(self, point: EllipticPoint) -> bool:
-        return (
-            pow(point.y, 2) - pow(point.x, 3) - self._A * point.x - self._B
-        ) % self._P == 0
+        return (pow(point.y, 2) - pow(point.x, 3) - self._A * point.x - self._B) % self._P == 0
 
 
 CURVE = {

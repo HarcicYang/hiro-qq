@@ -1,5 +1,4 @@
 import struct
-from typing import Optional
 
 __all__ = ["qqtea_encrypt", "qqtea_decrypt"]
 
@@ -75,16 +74,14 @@ class _TEA:
             result += tr
         return bytes(result)
 
-    def decrypt(self, text: bytes) -> Optional[bytes]:  # v不可变
+    def decrypt(self, text: bytes) -> bytes | None:  # v不可变
         data_len = len(text)
         plain = _tea_decipher(text, self.secret_key)
         pos = (plain[0] & 0x07) + 2
         ret = plain
         precrypt = text[0:8]
         for i in range(8, data_len, 8):
-            x = _xor(
-                _tea_decipher(_xor(text[i : i + 8], plain), self.secret_key), precrypt
-            )  # 跳过了前8个字节
+            x = _xor(_tea_decipher(_xor(text[i : i + 8], plain), self.secret_key), precrypt)  # 跳过了前8个字节
             plain = _xor(x, precrypt)
             precrypt = text[i : i + 8]
             ret += x

@@ -89,19 +89,17 @@ def sign_provider(upstream_url: str, uin: int, guid: str, qua: str):
                 if code != 0:
                     _logger.error(f"Sign server returned error: ({code}) {data.get('message')}")
                     if attempt < max_retries - 1:
-                        backoff = 2 ** attempt
+                        backoff = 2**attempt
                         _logger.warning(f"重试签名请求 ({attempt + 1}/{max_retries})，{backoff}s 后重试...")
                         await asyncio.sleep(backoff)
                         continue
                     return {}
 
-                _logger.debug(
-                    f"signed for [{cmd}:{seq}]({(time.time() - start_time) * 1000:.2f}ms)"
-                )
+                _logger.debug(f"signed for [{cmd}:{seq}]({(time.time() - start_time) * 1000:.2f}ms)")
                 break
             except Exception:
                 if attempt < max_retries - 1:
-                    backoff = 2 ** attempt
+                    backoff = 2**attempt
                     _logger.exception(f"签名请求失败 ({attempt + 1}/{max_retries})，{backoff}s 后重试:")
                     await asyncio.sleep(backoff)
                 else:

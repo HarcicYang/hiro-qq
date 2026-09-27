@@ -13,17 +13,14 @@ _trans_map = {
     "SubSigMap": "sub_sigmap",
 }
 
+
 def _translate_appinfo(s: dict[str, int | str]) -> dict[str, int | str]:
     out: dict[str, int | str] = {}
     for k, v in s.items():
         if k in _trans_map:
             out[_trans_map[k]] = v
         else:
-            k = re.sub(
-                r"([A-Z])([^A-Z]+)",
-                r"_\1\2",
-                k
-            ).lstrip("_").lower()
+            k = re.sub(r"([A-Z])([^A-Z]+)", r"_\1\2", k).lstrip("_").lower()
             out[k] = v
     return out
 
@@ -135,5 +132,5 @@ app_list: AppInfoDict = {
         sub_sigmap=0,
         nt_login_type=5,
         qua="",
-    )
+    ),
 }

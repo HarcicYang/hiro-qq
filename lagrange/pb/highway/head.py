@@ -1,12 +1,10 @@
-from typing import Optional
-
 from lagrange.utils.binary.protobuf import proto_field, ProtoStruct
 
 
 class DataHighwayHead(ProtoStruct):
     version: int = proto_field(1, default=1)
-    uin: Optional[str] = proto_field(2, default=None)
-    command: Optional[str] = proto_field(3, default=None)
+    uin: str | None = proto_field(2, default=None)
+    command: str | None = proto_field(3, default=None)
     seq: int = proto_field(4)
     retry_times: int = proto_field(5, default=0)
     app_id: int = proto_field(6)
@@ -16,7 +14,7 @@ class DataHighwayHead(ProtoStruct):
 
 
 class SegHead(ProtoStruct):
-    service_id: Optional[int] = proto_field(1, default=None)
+    service_id: int | None = proto_field(1, default=None)
     file_size: int = proto_field(2)
     data_offset: int = proto_field(3)
     data_length: int = proto_field(4)
@@ -24,8 +22,8 @@ class SegHead(ProtoStruct):
     ticket: bytes = proto_field(6, default=b"")
     md5: bytes = proto_field(8)
     file_md5: bytes = proto_field(9)
-    cache_addr: Optional[int] = proto_field(10, default=None)
-    cache_port: Optional[int] = proto_field(13, default=None)
+    cache_addr: int | None = proto_field(10, default=None)
+    cache_port: int | None = proto_field(13, default=None)
 
 
 class LoginSigHead(ProtoStruct):
@@ -35,21 +33,21 @@ class LoginSigHead(ProtoStruct):
 
 
 class HighwayTransReqHead(ProtoStruct):
-    msg_head: Optional[DataHighwayHead] = proto_field(1, default=None)
-    seg_head: Optional[SegHead] = proto_field(2, default=None)
+    msg_head: DataHighwayHead | None = proto_field(1, default=None)
+    seg_head: SegHead | None = proto_field(2, default=None)
     req_ext_info: bytes = proto_field(3, default=b"")
     timestamp: int = proto_field(4)
-    login_head: Optional[LoginSigHead] = proto_field(5, default=None)
+    login_head: LoginSigHead | None = proto_field(5, default=None)
 
 
 class HighwayTransRespHead(ProtoStruct):
-    msg_head: Optional[DataHighwayHead] = proto_field(1, default=None)
-    seg_head: Optional[SegHead] = proto_field(2, default=None)
+    msg_head: DataHighwayHead | None = proto_field(1, default=None)
+    seg_head: SegHead | None = proto_field(2, default=None)
     err_code: int = proto_field(3)
     allow_retry: int = proto_field(4)
-    cache_cost: Optional[int] = proto_field(5, default=None)
-    ht_cost: Optional[int] = proto_field(6, default=None)
+    cache_cost: int | None = proto_field(5, default=None)
+    ht_cost: int | None = proto_field(6, default=None)
     ext_info: bytes = proto_field(7, default=b"")
-    timestamp: Optional[int] = proto_field(8, default=None)
-    range: Optional[int] = proto_field(9, default=None)
-    is_reset: Optional[int] = proto_field(10, default=None)
+    timestamp: int | None = proto_field(8, default=None)
+    range: int | None = proto_field(9, default=None)
+    is_reset: int | None = proto_field(10, default=None)

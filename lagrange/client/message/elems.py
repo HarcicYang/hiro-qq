@@ -1,7 +1,7 @@
 import json
 from dataclasses import dataclass, field
 import time
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from lagrange.client.events.group import GroupMessage
 from lagrange.info.serialize import JsonSerializer
@@ -47,7 +47,7 @@ class MediaInfo:
     url: str
     id: int = field(repr=False)
     md5: bytes = field(repr=False)
-    qmsg: Optional[bytes] = field(repr=False)  # not online image
+    qmsg: bytes | None = field(repr=False)  # not online image
 
 
 @dataclass
@@ -145,8 +145,8 @@ class Image(CompatibleText, MediaInfo):
     height: int
     is_emoji: bool
     display_name: str
-    msg_info: Optional[MsgInfo] = field(default=None, repr=False)
-    bus_type: Optional[int] = field(default=None, repr=False)
+    msg_info: MsgInfo | None = field(default=None, repr=False)
+    bus_type: int | None = field(default=None, repr=False)
 
     @property
     def raw_text(self) -> str:
@@ -163,8 +163,8 @@ class Video(CompatibleText, MediaInfo):
     height: int
     time: int
     file_key: str = field(repr=True)
-    msg_info: Optional[MsgInfo] = field(default=None, repr=False)
-    compat: Optional[VideoFile] = field(default=None, repr=False)
+    msg_info: MsgInfo | None = field(default=None, repr=False)
+    compat: VideoFile | None = field(default=None, repr=False)
 
     @property
     def raw_text(self) -> str:
@@ -253,10 +253,10 @@ class File(CompatibleText):
     file_size: int
     file_name: str
     file_md5: bytes
-    file_url: Optional[str]
-    file_id: Optional[str]  # only in group
-    file_uuid: Optional[str]  # only in private
-    file_hash: Optional[str]
+    file_url: str | None
+    file_id: str | None  # only in group
+    file_uuid: str | None  # only in private
+    file_hash: str | None
 
     @property
     def display(self) -> str:
@@ -272,9 +272,9 @@ class File(CompatibleText):
         file_size: int,
         file_name: str,
         file_md5: bytes,
-        file_id: Optional[str] = None,
-        file_uuid: Optional[str] = None,
-        file_hash: Optional[str] = None,
+        file_id: str | None = None,
+        file_uuid: str | None = None,
+        file_hash: str | None = None,
     ) -> "File":
         return cls(
             file_size=file_size,
@@ -325,36 +325,36 @@ class Markdown(BaseElem):
 
 class Permission:
     type: int
-    specify_role_ids: Optional[list[str]]
-    specify_user_ids: Optional[list[str]]
+    specify_role_ids: list[str] | None
+    specify_user_ids: list[str] | None
 
 
 class RenderData:
-    label: Optional[str]
-    visited_label: Optional[str]
+    label: str | None
+    visited_label: str | None
     style: int
 
 
 class Action:
-    type: Optional[int]
-    permission: Optional[Permission]
+    type: int | None
+    permission: Permission | None
     data: str
     reply: bool
     enter: bool
-    anchor: Optional[int]
-    unsupport_tips: Optional[str]
-    click_limit: Optional[int]  # deprecated
+    anchor: int | None
+    unsupport_tips: str | None
+    click_limit: int | None  # deprecated
     at_bot_show_channel_list: bool  # deprecated
 
 
 class Button:
-    id: Optional[str]
-    render_data: Optional[RenderData]
-    action: Optional[Action]
+    id: str | None
+    render_data: RenderData | None
+    action: Action | None
 
 
 class InlineKeyboardRow:
-    buttons: Optional[list[Button]]
+    buttons: list[Button] | None
 
 
 class InlineKeyboard:
@@ -363,7 +363,7 @@ class InlineKeyboard:
 
 @dataclass
 class Keyboard(BaseElem):
-    content: Optional[list[InlineKeyboard]]
+    content: list[InlineKeyboard] | None
     bot_appid: int
 
     @property
@@ -385,7 +385,7 @@ class ForwardNode(BaseElem):
 @dataclass
 class MulitMsg(BaseElem):
     messages: list[ForwardNode] = field(default_factory=list)
-    resid: Optional[str] = None
+    resid: str | None = None
     file_name: str = ""
 
     @property

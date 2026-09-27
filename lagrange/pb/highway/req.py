@@ -1,5 +1,3 @@
-from typing import Optional
-
 from lagrange.utils.binary.protobuf import proto_field, ProtoStruct
 
 from .comm import CommonHead, ExtBizInfo, FileInfo, MsgInfo, IndexNode
@@ -21,10 +19,10 @@ class ClientMeta(ProtoStruct):
 class SceneInfo(ProtoStruct):
     req_type: int = proto_field(101)
     bus_type: int = proto_field(102)
-    field103: Optional[int] = proto_field(103, default=None)
+    field103: int | None = proto_field(103, default=None)
     scene_type: int = proto_field(200)
-    c2c: Optional[C2CUserInfo] = proto_field(201, default=None)
-    grp: Optional[GroupInfo] = proto_field(202, default=None)
+    c2c: C2CUserInfo | None = proto_field(201, default=None)
+    grp: GroupInfo | None = proto_field(202, default=None)
 
 
 class MultiMediaReqHead(ProtoStruct):
@@ -59,23 +57,23 @@ class UploadCompletedReq(ProtoStruct):
 class DownloadVideoExt(ProtoStruct):
     busi_type: int = proto_field(1, default=0)
     scene_type: int = proto_field(2, default=0)
-    sub_busi_type: Optional[int] = proto_field(3, default=None)
+    sub_busi_type: int | None = proto_field(3, default=None)
 
 
 class DownloadExt(ProtoStruct):
-    pic_ext: Optional[bytes] = proto_field(1, default=None)
+    pic_ext: bytes | None = proto_field(1, default=None)
     video_ext: DownloadVideoExt = proto_field(2, default_factory=DownloadVideoExt)
-    ptt_ext: Optional[bytes] = proto_field(3, default=None)
+    ptt_ext: bytes | None = proto_field(3, default=None)
 
 
 class DownloadReq(ProtoStruct):
     node: IndexNode = proto_field(1)
-    ext: Optional[DownloadExt] = proto_field(2, default=None)
+    ext: DownloadExt | None = proto_field(2, default=None)
 
 
 class NTV2RichMediaReq(ProtoStruct):
     req_head: MultiMediaReqHead = proto_field(1)
-    upload: Optional[UploadReq] = proto_field(2, default=None)
-    download: Optional[DownloadReq] = proto_field(3, default=None)
-    upload_completed: Optional[UploadCompletedReq] = proto_field(6, default=None)
-    ext: Optional[bytes] = proto_field(99, default=None)
+    upload: UploadReq | None = proto_field(2, default=None)
+    download: DownloadReq | None = proto_field(3, default=None)
+    upload_completed: UploadCompletedReq | None = proto_field(6, default=None)
+    ext: bytes | None = proto_field(99, default=None)

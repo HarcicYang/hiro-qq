@@ -2,7 +2,7 @@ import asyncio
 import time
 from hashlib import md5
 from io import BytesIO
-from typing import TYPE_CHECKING, BinaryIO, Optional, Union
+from typing import TYPE_CHECKING, BinaryIO
 
 from lagrange.client.message.elems import Audio, File, Image, Video
 from lagrange.pb.highway.comm import IndexNode
@@ -61,8 +61,8 @@ class HighWaySession:
     def __init__(self, client: "Client"):
         self.logger = log.fork("highway")
         self._client = client
-        self._session_sig: Optional[bytes] = None
-        self._session_key: Optional[bytes] = None
+        self._session_sig: bytes | None = None
+        self._session_key: bytes | None = None
         self._session_addr_list: list[tuple[str, int]] = []
 
     async def _get_bdh_session(self):
@@ -102,9 +102,9 @@ class HighWaySession:
         cmd_id: int,
         ticket: bytes,
         ext=None,
-        addrs: Optional[list[tuple[str, int]]] = None,
+        addrs: list[tuple[str, int]] | None = None,
         bs=65535,
-    ) -> Optional[bytes]:
+    ) -> bytes | None:
         if not addrs:
             addrs = self._session_addr_list
         for addr in addrs:
@@ -138,10 +138,10 @@ class HighWaySession:
         files: list[BinaryIO],
         cmd_id: int,
         ticket: bytes,
-        ext: Optional[bytes] = None,
+        ext: bytes | None = None,
         *,
         block_size=65535,
-    ) -> Optional[bytes]:
+    ) -> bytes | None:
         fmd5, _, fl = calc_file_hash_and_length(*files)
         ts = int(time.time() * 1000)
         bc = 0
@@ -212,7 +212,7 @@ class HighWaySession:
                     0x11C4 if gid else 0x11C5,
                     100,
                     encode_upload_img_req(gid, uid, fmd5, fsha1, fl, info, biz_type=biz_type).encode(),
-                    True
+                    True,
                 )
             ).data
         )
@@ -274,14 +274,7 @@ class HighWaySession:
     async def get_grp_img_url(self, grp_id: int, node: "IndexNode") -> str:
         ret = NTV2RichMediaResp.decode(
             (
-                await self._client.send_oidb_svc(
-                    0x11C4,
-                    200,
-                    encode_grp_img_download_req(
-                        grp_id, node
-                    ).encode(),
-                    True
-                )
+                await self._client.send_oidb_svc(0x11C4, 200, encode_grp_img_download_req(grp_id, node).encode(), True)
             ).data
         )
         body = ret.download
@@ -290,16 +283,7 @@ class HighWaySession:
 
     async def get_pri_img_url(self, uid: str, node: IndexNode) -> str:
         ret = NTV2RichMediaResp.decode(
-            (
-                await self._client.send_oidb_svc(
-                    0x11C5,
-                    200,
-                    encode_pri_img_download_req(
-                        uid, node
-                    ).encode(),
-                    True
-                )
-            ).data
+            (await self._client.send_oidb_svc(0x11C5, 200, encode_pri_img_download_req(uid, node).encode(), True)).data
         )
         body = ret.download
         assert body, "Internal error, check log for more detail"
@@ -317,9 +301,8 @@ class HighWaySession:
                 await self._client.send_oidb_svc(
                     0x126E if gid else 0x126D,
                     100,
-                    encode_audio_upload_req(
-                        gid, uid, fmd5, fsha1, fl, info.seconds
-                    ).encode(), True
+                    encode_audio_upload_req(gid, uid, fmd5, fsha1, fl, info.seconds).encode(),
+                    True,
                 )
             ).data
         )
@@ -373,7 +356,7 @@ class HighWaySession:
             url=await self.get_audio_down_url(file_key.decode(), gid, uid),
         )
 
-    async def get_audio_down_url(self, file_key_or_audio: Union[str, Audio], gid: int = 0, uid: str = "") -> str:
+    async def get_audio_down_url(self, file_key_or_audio: str | Audio, gid: int = 0, uid: str = "") -> str:
         if not self._session_addr_list:
             await self._get_bdh_session()
 
@@ -382,11 +365,7 @@ class HighWaySession:
         ret = NTV2RichMediaResp.decode(
             (
                 await self._client.send_oidb_svc(
-                    0x126E if gid else 0x126D,
-                    200,
-                    encode_audio_down_req(
-                        audio_file_key, gid, uid
-                    ).encode(), True
+                    0x126E if gid else 0x126D, 200, encode_audio_down_req(audio_file_key, gid, uid).encode(), True
                 )
             ).data
         )
@@ -406,7 +385,7 @@ class HighWaySession:
 
         return BytesIO(http.decompressed_body)
 
-    async def upload_video(self, file: BinaryIO, gid=0, uid="", thumb: Optional[BinaryIO] = None) -> Video:
+    async def upload_video(self, file: BinaryIO, gid=0, uid="", thumb: BinaryIO | None = None) -> Video:
         if not self._session_addr_list:
             await self._get_bdh_session()
         if thumb is None:
@@ -502,10 +481,7 @@ class HighWaySession:
         ret = NTV2RichMediaResp.decode(
             (
                 await self._client.send_oidb_svc(
-                    0x11EA if gid else 0x11E9,
-                    200,
-                    encode_video_down_req(node, gid, uid).encode(),
-                    True
+                    0x11EA if gid else 0x11E9, 200, encode_video_down_req(node, gid, uid).encode(), True
                 )
             ).data
         )
@@ -519,6 +495,7 @@ class HighWaySession:
         if not file_name:
             file_name = getattr(file, "name", "") or ""
             import os
+
             file_name = os.path.basename(file_name)
         fmd5, fsha1, fl = calc_file_hash_and_length(file)
         file.seek(0)
@@ -526,9 +503,7 @@ class HighWaySession:
         file.seek(0)
 
         req = E37UploadReq.build(self._client.uid, uid, fl, file_name, md5_10m, fsha1, fmd5)
-        rsp = E37UploadRsp.decode(
-            (await self._client.send_oidb_svc(0xE37, 1700, req.encode(), False)).data
-        )
+        rsp = E37UploadRsp.decode((await self._client.send_oidb_svc(0xE37, 1700, req.encode(), False)).data)
         upload = rsp.upload
         if upload.ret_code:
             raise ConnectionError(upload.ret_code, upload.ret_msg)
@@ -551,7 +526,7 @@ class HighWaySession:
                     host=ExcitingHostConfig(
                         hosts=[ExcitingHostInfo(url=ExcitingUrlInfo(host=upload.upload_ip), port=upload.upload_port)]
                     ),
-                )
+                ),
             ).encode()
             session_sig = self._session_sig
             if session_sig is None:
@@ -574,12 +549,15 @@ class HighWaySession:
             file_hash=upload.file_addon,
         )
 
-    async def upload_group_file(self, file: BinaryIO, grp_id: int, target_directory: str = "/", file_name: str = "") -> File:
+    async def upload_group_file(
+        self, file: BinaryIO, grp_id: int, target_directory: str = "/", file_name: str = ""
+    ) -> File:
         if not self._session_addr_list:
             await self._get_bdh_session()
         if not file_name:
             file_name = getattr(file, "name", "") or ""
             import os
+
             file_name = os.path.basename(file_name)
         fmd5, fsha1, fl = calc_file_hash_and_length(file)
         file.seek(0)
@@ -595,9 +573,7 @@ class HighWaySession:
                 file_md5=fmd5,
             )
         )
-        rsp = D6Rsp.decode(
-            (await self._client.send_oidb_svc(0x6D6, 0, req.encode(), True)).data
-        )
+        rsp = D6Rsp.decode((await self._client.send_oidb_svc(0x6D6, 0, req.encode(), True)).data)
         upload = rsp.upload
         if not upload or upload.ret_code:
             raise ConnectionError(upload.ret_code if upload else -1, upload.ret_msg if upload else "no upload")
@@ -648,9 +624,7 @@ class HighWaySession:
 
     async def get_private_file_url(self, file_uuid: str, file_hash: str, uid: str) -> str:
         req = E37DownloadReq.build(uid, file_uuid, file_hash)
-        rsp = E37DownloadRsp.decode(
-            (await self._client.send_oidb_svc(0xE37, 1200, req.encode(), False)).data
-        )
+        rsp = E37DownloadRsp.decode((await self._client.send_oidb_svc(0xE37, 1200, req.encode(), False)).data)
         if not (rsp.body and rsp.body.result):
             raise ConnectionError("Internal error, check log for more detail")
         result = rsp.body.result
@@ -658,12 +632,13 @@ class HighWaySession:
 
     async def get_group_file_url(self, grp_id: int, file_id: str) -> str:
         req = D6Req(download=D6Download(group_uin=grp_id, file_id=file_id))
-        rsp = D6Rsp.decode(
-            (await self._client.send_oidb_svc(0x6D6, 2, req.encode(), True)).data
-        )
+        rsp = D6Rsp.decode((await self._client.send_oidb_svc(0x6D6, 2, req.encode(), True)).data)
         download = rsp.download
         if not download or download.ret_code:
-            raise ConnectionError(download.ret_code if download else -1, download.ret_msg if download else "no download")
+            raise ConnectionError(
+                download.ret_code if download else -1,
+                download.ret_msg if download else "no download",
+            )
         return f"https://{download.download_dns}/ftn_handler/{download.download_url.hex()}/?fname="
 
     async def send_group_file(self, grp_id: int, file_id: str):

@@ -2,7 +2,7 @@ import json
 import re
 from urllib.parse import parse_qsl
 import xml.etree.ElementTree as ET
-from typing import TYPE_CHECKING, TypeVar, Union
+from typing import TYPE_CHECKING, TypeVar
 
 from lagrange.client.message.decoder import parse_grp_msg, parse_friend_msg
 from lagrange.pb.message.msg_push import MsgPush, MsgPushBody
@@ -98,15 +98,12 @@ def unpack(buf2: bytes, decoder: type[T]) -> tuple[int, T]:
     return grp_id, decoder.decode(reader.read_bytes_with_length("u16", False))
 
 
-def parse_quoted_str(string: str) -> list[dict[str, Union[str, int]]]:
+def parse_quoted_str(string: str) -> list[dict[str, str | int]]:
     """
     example data: 'test data <{"cmd": 1, "text": "updated"}> <{"cmd": 2}>!'
     to: [{"cmd": 1, "text": "updated"}, {"cmd": 2}]
     """
-    return [
-        json.loads(el)
-        for el in re.findall(r"<(\{.*?})>", string)
-    ]
+    return [json.loads(el) for el in re.findall(r"<(\{.*?})>", string)]
 
 
 async def msg_push_handler(client: "Client", sso: SSOPacket):
@@ -159,7 +156,7 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
         pb = PBGroupInvite.decode(buf2)
         return GroupInvite(grp_id=pb.gid, invitor_uid=pb.invitor_uid)
     elif typ == 167:
-        print(message.encode().hex())
+        logger.debug(message.encode().hex())
     elif typ == 525:
         pb = MemberInviteRequest.decode(buf2)
         if pb.cmd == 87:
@@ -174,11 +171,7 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
             uid = admin_body.uid
         else:
             uid = admin_body.uid
-        return GroupAdminChange(
-            grp_id=pb.grp_id,
-            is_set=pb.is_set,
-            uid=uid
-        )
+        return GroupAdminChange(grp_id=pb.grp_id, is_set=pb.is_set, uid=uid)
     elif typ == 0x210:  # friend event, 528 / group file upload notice event
         if sub_typ == 35:  # friend request
             pb = PBFriendRequest.decode(buf2)
@@ -197,7 +190,7 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                     pkg.response_head.from_uid or "",
                     pkg.response_head.to_uin or 0,
                     pkg.response_head.to_uid or "",
-                    pb.result.result_code
+                    pb.result.result_code,
                 )
             elif pb.notify:
                 return FriendAddNotify(
@@ -207,7 +200,7 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                     pkg.response_head.to_uid or "",
                     pb.notify.status,
                     pb.notify.timestamp,
-                    pb.notify.source
+                    pb.notify.source,
                 )
             else:
                 logger.debug(f"unhandled friend request: {pkg}")
@@ -258,12 +251,8 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                     # reserve: attrs["msg_nums"]
                     invitee = attrs.get("invitee")
                     if invitee is None:
-                        invitee = int(
-                            ET.fromstring(str(attrs["invitees_dynamic"])).attrib["uin"]
-                        )
-                    return GroupMemberJoinedByInvite(
-                        grp_id, int(attrs["invitor"]), int(invitee)
-                    )
+                        invitee = int(ET.fromstring(str(attrs["invitees_dynamic"])).attrib["uin"])
+                    return GroupMemberJoinedByInvite(grp_id, int(attrs["invitor"]), int(invitee))
                 elif "user" in attrs and "uin" in attrs:
                     # todo: 群代办
                     pass
@@ -340,7 +329,7 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                 pass
             elif pb.flag == 21:  # 位置实时分享（不完整）
                 pass
-                #print(sso.data.hex())
+                # print(sso.data.hex())
             elif pb.flag == 37:  # 群相册上传（手Q专用:(）
                 _, album = unpack(buf2, PBGroupAlbumUpdate)  # 塞 就硬塞，可以把你的顾辉盒也给塞进来
                 q = dict(parse_qsl(album.body.args))
@@ -380,19 +369,8 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
         elif sub_typ == 21:  # set/unset essence msg
             pass  # todo
         else:
-            logger.debug(
-                "unknown sub_type %d: %s"
-                % (
-                    sub_typ,
-                    message.buf2.hex() if getattr(message, "buf2", None) else pkg,
-                )
-            )
+            payload = message.buf2.hex() if getattr(message, "buf2", None) else pkg
+            logger.debug(f"unknown sub_type {sub_typ}: {payload}")
     else:
-        logger.debug(
-            "unknown type %d, sub type %d: %s"
-            % (
-                typ,
-                sub_typ,
-                message.buf2.hex() if getattr(message, "buf2", None) else pkg,
-            )
-        )
+        payload = message.buf2.hex() if getattr(message, "buf2", None) else pkg
+        logger.debug(f"unknown type {typ}, sub type {sub_typ}: {payload}")

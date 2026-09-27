@@ -41,14 +41,10 @@ def build_ntlogin_request(
         log.login.debug("login with captcha info")
         body[2][2] = build_ntlogin_captcha_submit(*captcha)
 
-    return proto_encode(
-        {1: sig.key_sig, 3: aes_gcm_encrypt(proto_encode(body), sig.exchange_key), 4: 1}
-    )
+    return proto_encode({1: sig.key_sig, 3: aes_gcm_encrypt(proto_encode(body), sig.exchange_key), 4: 1})
 
 
-def parse_ntlogin_response(
-    response: bytes, sig: SigInfo, captcha: list
-) -> LoginErrorCode:
+def parse_ntlogin_response(response: bytes, sig: SigInfo, captcha: list) -> LoginErrorCode:
     frame = proto_decode(response, 0)
     rsp = NTLoginRsp.decode(aes_gcm_decrypt(frame.into(3, bytes), sig.exchange_key))
 
@@ -83,8 +79,6 @@ def parse_ntlogin_response(
         else:
             title = error.title
             content = error.message
-            log.login.error(
-                f"Login fail on ntlogin({ret.name}): [{title}]>{content}"
-            )
+            log.login.error(f"Login fail on ntlogin({ret.name}): [{title}]>{content}")
 
     return ret

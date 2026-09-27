@@ -1,5 +1,3 @@
-from typing import Union, Optional
-
 from lagrange.utils.binary.protobuf import ProtoStruct, proto_field
 
 
@@ -14,9 +12,7 @@ class PBGetGrpMsgRequest(ProtoStruct):
     direction: bool = proto_field(2, default=True)
 
     @classmethod
-    def build(
-        cls, grp_id: int, start_seq: int, end_seq: int, direction=True
-    ) -> "PBGetGrpMsgRequest":
+    def build(cls, grp_id: int, start_seq: int, end_seq: int, direction=True) -> "PBGetGrpMsgRequest":
         return cls(
             body=GetGrpMsgReqBody(grp_id=grp_id, start_seq=start_seq, end_seq=end_seq),
             direction=direction,
@@ -65,15 +61,11 @@ class PBRenameMemberRequest(ProtoStruct):
 
     @classmethod
     def build(cls, grp_id: int, target_uid: str, name: str) -> "PBRenameMemberRequest":
-        return cls(
-            grp_id=grp_id, rename_f3=RenameMemberRequestF3(uid=target_uid, name=name)
-        )
+        return cls(grp_id=grp_id, rename_f3=RenameMemberRequestF3(uid=target_uid, name=name))
 
     @classmethod
     def build_for_title(cls, grp_id: int, target_uid: str, title: str) -> "PBRenameMemberRequest":
-        return cls(
-            grp_id=grp_id, rename_f3=RenameMemberRequestF3(uid=target_uid, special_title=title)
-        )
+        return cls(grp_id=grp_id, rename_f3=RenameMemberRequestF3(uid=target_uid, special_title=title))
 
 
 class PBLeaveGroupRequest(ProtoStruct):
@@ -143,11 +135,11 @@ class RspUser(ProtoStruct):
 class FetchGrpRspBody(ProtoStruct):
     seq: int = proto_field(1)
     event_type: int = proto_field(2)
-    state: Optional[int] = proto_field(3, default=None)
+    state: int | None = proto_field(3, default=None)
     group: RspGroup = proto_field(4)
     target: RspUser = proto_field(5)
-    invitor: Optional[RspUser] = proto_field(6, default=None)
-    operator: Optional[RspUser] = proto_field(7, default=None)
+    invitor: RspUser | None = proto_field(6, default=None)
+    operator: RspUser | None = proto_field(7, default=None)
     comment: str = proto_field(9, default="")
 
 
@@ -168,14 +160,10 @@ class PBHandleGroupRequest(ProtoStruct):
     body: HandleGrpReqBody = proto_field(2)
 
     @classmethod
-    def build(
-        cls, action: int, seq: int, event_type: int, grp_id: int, message: str
-    ) -> "PBHandleGroupRequest":
+    def build(cls, action: int, seq: int, event_type: int, grp_id: int, message: str) -> "PBHandleGroupRequest":
         return cls(
             action=action,
-            body=HandleGrpReqBody(
-                seq=seq, event_type=event_type, grp_id=grp_id, message=message
-            ),
+            body=HandleGrpReqBody(seq=seq, event_type=event_type, grp_id=grp_id, message=message),
         )
 
 
@@ -188,9 +176,7 @@ class PBSendGrpReactionReq(ProtoStruct):
     f7: int = proto_field(7, default=0)
 
     @classmethod
-    def build(
-        cls, grp_id: int, seq: int, content: Union[str, int]
-    ) -> "PBSendGrpReactionReq":
+    def build(cls, grp_id: int, seq: int, content: str | int) -> "PBSendGrpReactionReq":
         return cls(
             grp_id=grp_id,
             seq=seq,
@@ -211,9 +197,7 @@ class PBGroupMuteMemberRequest(ProtoStruct):
 
     @classmethod
     def build(cls, grp_id: int, uid: str, duration: int) -> "PBGroupMuteMemberRequest":
-        return cls(
-            grp_id=grp_id, body=GroupMuteMemberReqBody(uid=uid, duration=duration)
-        )
+        return cls(grp_id=grp_id, body=GroupMuteMemberReqBody(uid=uid, duration=duration))
 
 
 # class PBGroupKickMemberRequest(ProtoStruct):
@@ -244,12 +228,8 @@ class PBGroupKickMemberRequest(ProtoStruct):
     body: GroupKickMemberReqBody = proto_field(2)
 
     @classmethod
-    def build(
-        cls, grp_id: int, uin: int, permanent: bool
-    ) -> "PBGroupKickMemberRequest":
-        return cls(
-            grp_id=grp_id, body=GroupKickMemberReqBody(uin=uin, permanent=permanent)
-        )
+    def build(cls, grp_id: int, uin: int, permanent: bool) -> "PBGroupKickMemberRequest":
+        return cls(grp_id=grp_id, body=GroupKickMemberReqBody(uin=uin, permanent=permanent))
 
 
 # # group_member_card.get_group_member_card_info
@@ -288,7 +268,7 @@ class PBGroupKickMemberRequest(ProtoStruct):
 
 class AccountInfo(ProtoStruct):
     uid: str = proto_field(2)
-    uin: Optional[int] = proto_field(4, default=None)
+    uin: int | None = proto_field(4, default=None)
 
 
 class PBGetGrpMemberInfoReq(ProtoStruct):
@@ -296,13 +276,11 @@ class PBGetGrpMemberInfoReq(ProtoStruct):
     f2: int = proto_field(2)
     f3: int = proto_field(3)
     fetch_list: bytes = proto_field(4)  # dict[int, 1]
-    account: Optional[AccountInfo] = proto_field(5, default=None)
-    next_key: Optional[bytes] = proto_field(15, default=None)  # base64(pb)
+    account: AccountInfo | None = proto_field(5, default=None)
+    next_key: bytes | None = proto_field(15, default=None)  # base64(pb)
 
     @classmethod
-    def build(
-        cls, grp_id: int, uid="", next_key: Optional[str] = None
-    ) -> "PBGetGrpMemberInfoReq":
+    def build(cls, grp_id: int, uid="", next_key: str | None = None) -> "PBGetGrpMemberInfoReq":
         assert not (uid and next_key), "invalid arguments"
         if uid:
             account = AccountInfo(uid=uid)
@@ -335,23 +313,23 @@ class MemberInfoLevel(ProtoStruct):
 class GetGrpMemberInfoRsp(ProtoStruct):
     grp_id: int = proto_field(1)
     body: "list[GetGrpMemberInfoRspBody]" = proto_field(2)
-    next_key: Optional[bytes] = proto_field(15, default=None)  # base64(pb)
+    next_key: bytes | None = proto_field(15, default=None)  # base64(pb)
 
 
 class GetGrpMemberInfoRspBody(ProtoStruct):
     account: AccountInfo = proto_field(1)
     nickname: str = proto_field(10, default="")
-    name: Optional[MemberInfoName] = proto_field(11, default=None)  # if none? not set
-    level: Optional[MemberInfoLevel] = proto_field(12, default=None)  # if none? retry
-    f14: Optional[int] = proto_field(14, default=None)
-    f15: Optional[int] = proto_field(15, default=None)
-    f16: Optional[int] = proto_field(16, default=None)
+    name: MemberInfoName | None = proto_field(11, default=None)  # if none? not set
+    level: MemberInfoLevel | None = proto_field(12, default=None)  # if none? retry
+    f14: int | None = proto_field(14, default=None)
+    f15: int | None = proto_field(15, default=None)
+    f16: int | None = proto_field(16, default=None)
     # f20: int = proto_field(20)  # always 1
     joined_time: int = proto_field(100)
     last_seen: int = proto_field(101)
-    f104: Optional[int] = proto_field(104, default=None)
-    f105: Optional[int] = proto_field(105, default=None)
-    f200: Optional[int] = proto_field(200, default=None)
+    f104: int | None = proto_field(104, default=None)
+    f105: int | None = proto_field(105, default=None)
+    f200: int | None = proto_field(200, default=None)
     permission: int = proto_field(107, default=0)  # 0: member, 1: owner, 2: admin
 
     @property
@@ -393,15 +371,15 @@ class GrpInfoBasic(ProtoStruct):
     max_members: int = proto_field(3)
     now_members: int = proto_field(4)
     grp_name: str = proto_field(5)
-    introduce: Optional[str] = proto_field(18, default=None)
-    question: Optional[str] = proto_field(19, default=None)
-    recent_notice: Optional[str] = proto_field(30, default=None)  # 30 chars
+    introduce: str | None = proto_field(18, default=None)
+    question: str | None = proto_field(19, default=None)
+    recent_notice: str | None = proto_field(30, default=None)  # 30 chars
 
 
 class GrpInfoOther(ProtoStruct):
     create_time: int = proto_field(1)  # ?
-    upgrade_time: Optional[int] = proto_field(4, default=None)  # when upgrade grp size?
-    f5: Optional[int] = proto_field(5, default=None)  # unknown
+    upgrade_time: int | None = proto_field(4, default=None)  # when upgrade grp size?
+    f5: int | None = proto_field(5, default=None)  # unknown
 
 
 class GrpInfo(ProtoStruct):
@@ -461,7 +439,7 @@ class GetInfoRspBody(ProtoStruct):
 
 
 class Oidb88D0Args(ProtoStruct):
-    seq: Optional[int] = proto_field(22, default=None)
+    seq: int | None = proto_field(22, default=None)
 
 
 class GetGrpLastSeqReqBody(ProtoStruct):

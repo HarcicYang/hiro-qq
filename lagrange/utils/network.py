@@ -1,6 +1,5 @@
 import asyncio
 import traceback
-from typing import Optional
 
 from .log import log
 
@@ -13,7 +12,7 @@ class Connection:
         host: str,
         port: int,
         ssl: bool = False,
-        timeout: Optional[float] = 10,
+        timeout: float | None = 10,
     ) -> None:
         self._host = host
         self._port = port
@@ -22,8 +21,8 @@ class Connection:
         self._stop_ev = asyncio.Event()
         self.timeout = timeout
 
-        self._reader: Optional[asyncio.StreamReader] = None
-        self._writer: Optional[asyncio.StreamWriter] = None
+        self._reader: asyncio.StreamReader | None = None
+        self._writer: asyncio.StreamWriter | None = None
 
     @property
     def host(self) -> str:
@@ -83,10 +82,7 @@ class Connection:
     async def _read_loop(self):
         try:
             while not self.closed:
-                length = (
-                    int.from_bytes(await self.reader.readexactly(4), byteorder="big")
-                    - 4
-                )
+                length = int.from_bytes(await self.reader.readexactly(4), byteorder="big") - 4
                 if length:
                     await self.on_message(length)
                 else:

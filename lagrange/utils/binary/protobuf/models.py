@@ -1,11 +1,14 @@
 import inspect
 import sys
+import warnings
 from dataclasses import MISSING
 from types import GenericAlias
-from typing import cast, TypeVar, Union, Any, Callable, overload, get_origin, get_args, ForwardRef
+from typing import cast, TypeVar, Union, Any, overload, get_origin, get_args, ForwardRef
+from collections.abc import Callable
 from collections.abc import Mapping
-from typing_extensions import Self, TypeAlias, dataclass_transform
-from typing import Optional, ClassVar
+from typing_extensions import Self, dataclass_transform
+from typing import TypeAlias
+from typing import ClassVar
 
 from .coder import Proto, proto_decode, proto_encode
 from .util import eval_type
@@ -63,13 +66,12 @@ class ProtoField:
 def proto_field(
     tag: int,
     *,
-    default: Optional[T],
+    default: T | None,
     init: bool = True,
     repr: bool = True,
-    metadata: Optional[Mapping[Any, Any]] = None,
+    metadata: Mapping[Any, Any] | None = None,
     kw_only: bool = ...,
-) -> T:
-    ...
+) -> T: ...
 
 
 @overload
@@ -79,10 +81,9 @@ def proto_field(
     default_factory: Callable[[], T],
     init: bool = True,
     repr: bool = True,
-    metadata: Optional[Mapping[Any, Any]] = None,
+    metadata: Mapping[Any, Any] | None = None,
     kw_only: bool = ...,
-) -> T:
-    ...
+) -> T: ...
 
 
 @overload
@@ -91,20 +92,19 @@ def proto_field(
     *,
     init: bool = True,
     repr: bool = True,
-    metadata: Optional[Mapping[Any, Any]] = None,
+    metadata: Mapping[Any, Any] | None = None,
     kw_only: bool = ...,
-) -> Any:
-    ...
+) -> Any: ...
 
 
 def proto_field(
     tag: int,
     *,
-    default: Optional[Any] = MISSING,
-    default_factory: Optional[Any] = MISSING,
+    default: Any | None = MISSING,
+    default_factory: Any | None = MISSING,
     init: bool = True,
     repr: bool = True,
-    metadata: Optional[Mapping[Any, Any]] = None,
+    metadata: Mapping[Any, Any] | None = None,
     kw_only: bool = False,
 ) -> "Any":
     return ProtoField(tag, default, default_factory)
@@ -184,9 +184,7 @@ class ProtoStruct:
                 if __from_raw:
                     value = _decode(field.type_without_optional, value)
                 if not check_type(value, field.type):
-                    raise TypeError(
-                        f"'{value}' is not a instance of type '{field.type}'"
-                    )
+                    raise TypeError(f"'{value}' is not a instance of type '{field.type}'")
                 setattr(self, name, value)
             else:
                 if (de := field.get_default()) is not MISSING:
@@ -213,7 +211,7 @@ class ProtoStruct:
         for name, typ in cls_annotations.items():
             field = getattr(cls, name, MISSING)
             if field is MISSING:
-                raise TypeError(f'{name!r} should define its proto_field!')
+                raise TypeError(f"{name!r} should define its proto_field!")
             field.ensure_annotation(name, typ)
             if field._unevaluated:
                 _unevaluated_classes.add(cls)
@@ -225,8 +223,8 @@ class ProtoStruct:
                 delattr(cls, f.name)
 
         for name, value in cls.__dict__.items():
-            if isinstance(value, ProtoField) and not name in cls_annotations:
-                raise TypeError(f'{name!r} is a proto_field but has no type annotation')
+            if isinstance(value, ProtoField) and name not in cls_annotations:
+                raise TypeError(f"{name!r} is a proto_field but has no type annotation")
 
         cls.__proto_fields__ = fields
 
@@ -283,14 +281,10 @@ class ProtoStruct:
             raise ValueError(f"Cannot decode empty protobuf for {cls.__name__}")
         pb_dict: Proto = proto_decode(data, 0).proto
 
-        kwargs = {
-            field.name: pb_dict.pop(field.tag)
-            for field in cls.__proto_fields__.values()
-            if field.tag in pb_dict
-        }
+        kwargs = {field.name: pb_dict.pop(field.tag) for field in cls.__proto_fields__.values() if field.tag in pb_dict}
 
         if pb_dict and cls.__proto_debug__:  # unhandled tags
-            print(f"DEBUG: unhandled tags '{pb_dict}' on {cls}")
+            warnings.warn(f"unhandled tags '{pb_dict}' on {cls}", RuntimeWarning, stacklevel=2)
         return cls(True, **kwargs)
 
 

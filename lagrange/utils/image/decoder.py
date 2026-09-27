@@ -52,9 +52,7 @@ class PNGDecoder(BaseDecoder):
                 raise ValueError("decoder fail")
             length, btype = struct.unpack("!I4s", raw_head)
             data = fio.read(length)
-            if binascii.crc32(raw_head[4:] + data) != int.from_bytes(
-                fio.read(4), "big"
-            ):
+            if binascii.crc32(raw_head[4:] + data) != int.from_bytes(fio.read(4), "big"):
                 raise ValueError("CRC not match")
             if btype == b"IHDR":
                 width, height, depth, *_ = struct.unpack("!IIBBBBB", data)

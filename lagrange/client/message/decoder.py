@@ -1,7 +1,7 @@
 import json
 from xml.dom import minidom
 import zlib
-from typing import TYPE_CHECKING, cast, Literal, Union
+from typing import TYPE_CHECKING, cast, Literal
 from collections.abc import Sequence
 
 from lagrange.client.events.group import GroupMessage
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from lagrange.client.client import Client
 
 
-def _parse_multimsg_json(content: bytes) -> Union[elems.MulitMsg, None]:
+def _parse_multimsg_json(content: bytes) -> elems.MulitMsg | None:
     try:
         data = json.loads(content)
     except (UnicodeDecodeError, json.JSONDecodeError, TypeError):
@@ -87,7 +87,7 @@ def _file_info_from_index(index: IndexNode) -> FileInfo:
 
 
 async def parse_msg_new(
-    client: "Client", pkg: MsgPushBody, fri_id: Union[str, None] = None, grp_id: Union[int, None] = None
+    client: "Client", pkg: MsgPushBody, fri_id: str | None = None, grp_id: int | None = None
 ) -> Sequence[Element]:
     message = pkg.message
     if message is None:

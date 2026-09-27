@@ -45,11 +45,7 @@ class ECDHProvider:
         if compress:
             result = bytearray(self._public.x.to_bytes(self._curve.size, "big"))
             result = bytearray(1) + result
-            result[0] = (
-                0x02
-                if (((self._public.y % 2) == 0) ^ ((self._public.y > 0) < 0))
-                else 0x03
-            )
+            result[0] = 0x02 if (((self._public.y % 2) == 0) ^ ((self._public.y > 0) < 0)) else 0x03
             return bytes(result)
 
         x = self._public.x.to_bytes(self._curve.size, "big")
@@ -100,9 +96,7 @@ class ECDHProvider:
         return pr
 
 
-def _point_add(
-    curve: EllipticCurve, p1: EllipticPoint, p2: EllipticPoint
-) -> EllipticPoint:
+def _point_add(curve: EllipticCurve, p1: EllipticPoint, p2: EllipticPoint) -> EllipticPoint:
     if p1.is_default:
         return p2
     if p2.is_default:

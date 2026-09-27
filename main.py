@@ -21,7 +21,9 @@ async def msg_handler(client: Client, event: GroupMessage):
             event.grp_id,
         )
     elif event.msg.startswith("file"):
-        f = await client.upload_grp_file(open("/home/harcic8042/Downloads/test.mp4", "rb"), event.grp_id, file_name="test_custom.mp4")
+        f = await client.upload_grp_file(
+            open("/home/harcic8042/Downloads/test.mp4", "rb"), event.grp_id, file_name="test_custom.mp4"
+        )
         print(f"group file send ok: id={f.file_id}, name={f.file_name}, size={f.file_size}")
     elif event.msg.startswith("forward_send"):
         forward_msg = MulitMsg(
@@ -114,7 +116,9 @@ async def friend_msg_handler(client: Client, event: FriendMessage):
         await client.recall_friend_msg(event.from_uid, seq)
         print(f"[recall] ok seq={seq}")
     elif event.msg.startswith("file"):
-        f = await client.upload_friend_file(open("/home/harcic8042/Downloads/test.mp4", "rb"), event.from_uid, file_name="test_custom.mp4")
+        f = await client.upload_friend_file(
+            open("/home/harcic8042/Downloads/test.mp4", "rb"), event.from_uid, file_name="test_custom.mp4"
+        )
         print(f"friend file send ok: uuid={f.file_uuid}, hash={f.file_hash}, name={f.file_name}, size={f.file_size}")
     elif event.msg.startswith("imgs"):
         await client.send_friend_msg(
@@ -191,9 +195,10 @@ async def handle_group_admin(client: Client, event: GroupAdminChange):
 
 lag = Lagrange(
     int(os.environ.get("LAGRANGE_UIN", "0")),
-    "linux", os.environ.get("LAGRANGE_SIGN_URL", ""),
+    "linux",
+    os.environ.get("LAGRANGE_SIGN_URL", ""),
     use_ipv6=False,
-    use_optimum=True
+    use_optimum=True,
 )
 install_loguru()  # optional, for better logging
 lag.log.set_level("DEBUG")

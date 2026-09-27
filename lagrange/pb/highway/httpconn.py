@@ -1,5 +1,4 @@
 import ipaddress
-from typing import Optional
 
 from lagrange.utils.binary.protobuf import proto_field, ProtoStruct
 
@@ -29,7 +28,7 @@ class HttpConn0x6ffReq(ProtoStruct):
 class BaseAddress(ProtoStruct):
     type: int = proto_field(1)
     port: int = proto_field(3)
-    area: Optional[int] = proto_field(4, default=None)
+    area: int | None = proto_field(4, default=None)
 
     @property
     def ip(self) -> str:

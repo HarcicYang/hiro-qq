@@ -1,12 +1,10 @@
-from typing import Optional
-
 from lagrange.pb.message.msg_push import MsgPushBody
 from lagrange.utils.binary.protobuf import ProtoStruct, proto_field
 
 
 class FriendProperty(ProtoStruct):
     code: int = proto_field(1)
-    value: Optional[str] = proto_field(2, default=None)
+    value: str | None = proto_field(2, default=None)
 
 
 class FriendLayer1(ProtoStruct):
@@ -20,7 +18,7 @@ class FriendAdditional(ProtoStruct):
 
 class FriendInfo(ProtoStruct):
     uid: str = proto_field(1)
-    custom_group: Optional[int] = proto_field(2, default=None)
+    custom_group: int | None = proto_field(2, default=None)
     uin: int = proto_field(3)
     additional: list[FriendAdditional] = proto_field(10001)
 
@@ -41,7 +39,7 @@ class GetFriendListUin(ProtoStruct):
 class PBGetFriendListRequest(ProtoStruct):
     friend_count: int = proto_field(2, default=300)  # paging get num
     f4: int = proto_field(4, default=0)
-    next_uin: Optional[GetFriendListUin] = proto_field(5, default=None)
+    next_uin: GetFriendListUin | None = proto_field(5, default=None)
     f6: int = proto_field(6, default=1)
     f7: int = proto_field(7, default=2147483647)  # MaxValue
     body: list[GetFriendBody] = proto_field(
@@ -63,7 +61,7 @@ class PBGetFriendListRequest(ProtoStruct):
 
 
 class GetFriendListRsp(ProtoStruct):
-    next: Optional[GetFriendListUin] = proto_field(2, default=None)
+    next: GetFriendListUin | None = proto_field(2, default=None)
     display_friend_count: int = proto_field(3)
     timestamp: int = proto_field(6)
     self_uin: int = proto_field(7)
@@ -118,15 +116,15 @@ class RecallFriendMsgRequest(ProtoStruct):
 
 
 class GetFriendMsgRequest(ProtoStruct):
-    uid: Optional[str] = proto_field(2)
+    uid: str | None = proto_field(2)
     start: int = proto_field(3)
     end: int = proto_field(4)
 
 
 class GetFriendMsgRsp(ProtoStruct):
-    ret_code: Optional[int] = proto_field(1, default=None)
-    msg: Optional[str] = proto_field(2, default=None)
-    uid: Optional[str] = proto_field(4, default=None)
+    ret_code: int | None = proto_field(1, default=None)
+    msg: str | None = proto_field(2, default=None)
+    uid: str | None = proto_field(4, default=None)
     messages: list[MsgPushBody] = proto_field(7, default_factory=list)
 
 
@@ -145,10 +143,10 @@ class RecallFriendMsgEcho(ProtoStruct):
 
 
 class RecallFriendMsgRsp(ProtoStruct):
-    ret_code: Optional[int] = proto_field(1, default=None)
-    err_msg: Optional[str] = proto_field(2, default=None)
+    ret_code: int | None = proto_field(1, default=None)
+    err_msg: str | None = proto_field(2, default=None)
     field3: int = proto_field(3, default=0)
-    echo: Optional[RecallFriendMsgEcho] = proto_field(5, default=None)
+    echo: RecallFriendMsgEcho | None = proto_field(5, default=None)
     field6: bytes = proto_field(6, default=b"")
 
 

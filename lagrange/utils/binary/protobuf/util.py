@@ -4,22 +4,19 @@ import operator
 import sys
 import types
 import typing
-from typing import Any, ForwardRef, List, cast
+from typing import Any, ForwardRef, cast
 import typing_extensions
 from typing_extensions import ParamSpec
 
-_GenericAlias = type(List[int])
-SpecialType = (_GenericAlias, types.GenericAlias)
-
-if sys.version_info >= (3, 10):
-    SpecialType += (types.UnionType,)
+_GenericAlias = type(list[int])
+SpecialType = (_GenericAlias, types.GenericAlias, types.UnionType)
 
 if sys.version_info >= (3, 11):
     eval_type = typing._eval_type  # type: ignore
 else:
+
     def _is_param_expr(arg):
         return arg is ... or isinstance(arg, (tuple, list, ParamSpec, typing_extensions._ConcatenateGenericAlias))  # type: ignore
-
 
     def _should_unflatten_callable_args(typ, args):
         """Internal helper for munging collections.abc.Callable's __args__.
@@ -39,11 +36,7 @@ else:
         As a result, if we need to reconstruct the Callable from its __args__,
         we need to unflatten it.
         """
-        return (
-            typ.__origin__ is collections.abc.Callable
-            and not (len(args) == 2 and _is_param_expr(args[0]))
-        )
-
+        return typ.__origin__ is collections.abc.Callable and not (len(args) == 2 and _is_param_expr(args[0]))
 
     def eval_type(t, globalns, localns, recursive_guard=frozenset()):
         """Evaluate all forward references in the given type t.
@@ -56,10 +49,7 @@ else:
             return t._evaluate(globalns, localns, recursive_guard)
         if isinstance(t, SpecialType):
             if isinstance(t, types.GenericAlias):
-                args = tuple(
-                    ForwardRef(arg) if isinstance(arg, str) else arg
-                    for arg in t.__args__
-                )
+                args = tuple(ForwardRef(arg) if isinstance(arg, str) else arg for arg in t.__args__)
                 is_unpacked = getattr(t, "__unpacked__", False)
                 if _should_unflatten_callable_args(t, args):
                     t = t.__origin__[(args[:-1], args[-1])]  # type: ignore

@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import List
 
 from . import BaseEvent
 
@@ -28,4 +27,4 @@ class OtherClientInfo(BaseEvent):
         os_name: str
         device_name: str
 
-    clients: List[ClientOnline]
+    clients: list[ClientOnline]

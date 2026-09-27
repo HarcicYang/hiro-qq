@@ -1,20 +1,18 @@
 import time
-from typing import Any, TypeVar, Union, overload
+from typing import Any, TypeVar, overload
 
 T = TypeVar("T")
 
 
 @overload
-def unpack_dict(pd: dict, rule: str) -> Any:
-    ...
+def unpack_dict(pd: dict, rule: str) -> Any: ...
 
 
 @overload
-def unpack_dict(pd: dict, rule: str, default: T) -> Union[Any, T]:
-    ...
+def unpack_dict(pd: dict, rule: str, default: T) -> Any | T: ...
 
 
-def unpack_dict(pd: dict, rule: str, default: Union[T, None] = None) -> Union[Any, T]:
+def unpack_dict(pd: dict, rule: str, default: T | None = None) -> Any | T:
     _pd: Any = pd
     for r in rule.split("."):
         if isinstance(_pd, list) or (isinstance(_pd, dict) and int(r) in _pd):

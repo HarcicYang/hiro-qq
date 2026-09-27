@@ -1,6 +1,7 @@
 from typing import Union, TypeVar, TYPE_CHECKING, cast
 from collections.abc import Mapping, Sequence
-from typing_extensions import Self, TypeAlias
+from typing_extensions import Self
+from typing import TypeAlias
 
 from lagrange.utils.binary.builder import Builder
 from lagrange.utils.binary.reader import Reader
@@ -8,14 +9,9 @@ from lagrange.utils.binary.reader import Reader
 Proto: TypeAlias = dict[int, "ProtoEncodable"]
 ProtoInput: TypeAlias = Mapping[int, object]
 LengthDelimited: TypeAlias = Union[str, "Proto", bytes]
-ProtoEncodable: TypeAlias = Union[
-    int,
-    float,
-    bool,
-    LengthDelimited,
-    Sequence["ProtoEncodable"],
-    Mapping[int, "ProtoEncodable"],
-]
+ProtoEncodable: TypeAlias = (
+    int | float | bool | LengthDelimited | Sequence["ProtoEncodable"] | Mapping[int, "ProtoEncodable"]
+)
 TProtoEncodable = TypeVar("TProtoEncodable", bound="ProtoEncodable")
 
 
@@ -26,14 +22,14 @@ class ProtoDecoded:
     def __getitem__(self, item: int) -> "ProtoEncodable":
         return self.proto[item]
 
-    def into(self, field: Union[int, tuple[int, ...]], tp: type[TProtoEncodable]) -> TProtoEncodable:
+    def into(self, field: int | tuple[int, ...], tp: type[TProtoEncodable]) -> TProtoEncodable:
         if isinstance(field, int):
             return self.proto[field]  # type: ignore
         else:
             data = self.proto
             for f in field:
                 data = data[f]  # type: ignore
-            return data # type: ignore
+            return data  # type: ignore
 
 
 class ProtoBuilder(Builder):

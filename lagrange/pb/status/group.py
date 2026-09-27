@@ -2,18 +2,16 @@
 Push Events
 """
 
-from typing import Optional
-
 from lagrange.utils.binary.protobuf import proto_field, ProtoStruct
 
 
 class MemberChanged(ProtoStruct):
     uin: int = proto_field(1)
     uid: str = proto_field(3)
-    exit_type: Optional[int] = proto_field(4, default=None)  # 3kick_me, 131kick, 130exit
+    exit_type: int | None = proto_field(4, default=None)  # 3kick_me, 131kick, 130exit
     operator_uid: str = proto_field(5, default="")
-    join_type: Optional[int] = proto_field(6, default=None)  # 6other, 0slef_invite
-    join_type_new: Optional[int] = proto_field(
+    join_type: int | None = proto_field(6, default=None)  # 6other, 0slef_invite
+    join_type_new: int | None = proto_field(
         4, default=None
     )  # 130 by_other(click url,scan qr,input grpid), 131 by_invite
 
@@ -51,8 +49,8 @@ class GroupAdminExtra(ProtoStruct):
 
 
 class GroupAdminBody(ProtoStruct):
-    extra_disable: Optional[GroupAdminExtra] = proto_field(1, default=None)
-    extra_enable: Optional[GroupAdminExtra] = proto_field(2, default=None)
+    extra_disable: GroupAdminExtra | None = proto_field(1, default=None)
+    extra_enable: GroupAdminExtra | None = proto_field(2, default=None)
 
 
 class GroupAdmin(ProtoStruct):
@@ -82,7 +80,7 @@ class RecallMsgExtra(ProtoStruct):
 class MemberRecallMsgBody(ProtoStruct):
     uid: str = proto_field(1)
     info: RecallMsgInfo = proto_field(3)
-    extra: Optional[RecallMsgExtra] = proto_field(9, default=None)
+    extra: RecallMsgExtra | None = proto_field(9, default=None)
 
 
 class MemberRecallMsg(ProtoStruct):
@@ -124,13 +122,13 @@ class PBGroupReaction(ProtoStruct):
 
 class GroupSub16Head(ProtoStruct):
     timestamp: int = proto_field(2, default=0)
-    uin: Optional[int] = proto_field(4, default=None)
-    body: Optional[bytes] = proto_field(5, default=None)
-    flag: Optional[int] = proto_field(
+    uin: int | None = proto_field(4, default=None)
+    body: bytes | None = proto_field(5, default=None)
+    flag: int | None = proto_field(
         13, default=None
     )  # 12: renamed, 6: set special_title, 13: unknown, 35: set reaction, 38: bot add
     operator_uid: str = proto_field(21, default="")
-    f44: Optional[PBGroupReaction] = proto_field(44, default=None)  # set reaction only
+    f44: PBGroupReaction | None = proto_field(44, default=None)  # set reaction only
 
 
 class GroupSub20Head(ProtoStruct):
@@ -141,7 +139,7 @@ class GroupSub20Head(ProtoStruct):
 
 
 class GroupSub20Body(ProtoStruct):
-    type: Optional[int] = proto_field(1, default=None)  # 12: nudge, 14: group_sign
+    type: int | None = proto_field(1, default=None)  # 12: nudge, 14: group_sign
     f2: int = proto_field(2)  # 1061 ,  bot added group:19217
     # f3: int = proto_field(3)  # 7
     # f6: int = proto_field(6)  # 1132
@@ -195,8 +193,8 @@ class PBSelfJoinInGroup(ProtoStruct):
 
 class PBGroupBotAddedBody(ProtoStruct):
     grp_id: int = proto_field(1)
-    bot_uid_1: Optional[str] = proto_field(2, default=None)
-    bot_uid_2: Optional[str] = proto_field(3, default=None)  # f**k tx
+    bot_uid_1: str | None = proto_field(2, default=None)
+    bot_uid_2: str | None = proto_field(3, default=None)  # f**k tx
     flag: int = proto_field(4)
 
 

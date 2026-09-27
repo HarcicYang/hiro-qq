@@ -1,11 +1,11 @@
 import json
-from typing import Optional
 
 from lagrange.info import AppInfo
-from typing_extensions import Literal
+from typing import Literal
 import asyncio
 
 from .client.client import Client as Client
+
 # from .client.server_push.msg import msg_push_handler
 # from .client.server_push.service import server_kick_handler
 from .utils.log import log as log
@@ -23,12 +23,12 @@ class Lagrange:
         self,
         uin: int,
         protocol: Literal["linux", "macos", "windows", "custom"] = "linux",
-        sign_url: Optional[str] = None,
+        sign_url: str | None = None,
         device_info_path: str = "./device.json",
         signinfo_path: str = "./sig.bin",
         custom_protocol_path: str = "./protocol.json",
         use_ipv6: bool = True,
-        use_optimum: bool = False
+        use_optimum: bool = False,
     ):
         self.im = InfoManager(uin, device_info_path, signinfo_path)
         self.uin = uin
@@ -54,8 +54,8 @@ class Lagrange:
 
     async def run(self):
         if self._protocol == "custom":
-            log.root.debug("load custom protocol from %s" % self._protocol_path)
-            with open(self._protocol_path, "r") as f:
+            log.root.debug(f"load custom protocol from {self._protocol_path}")
+            with open(self._protocol_path) as f:
                 proto = json.loads(f.read())
             app_info = AppInfo.load_custom(proto)
         else:
@@ -70,15 +70,7 @@ class Lagrange:
                     im.device.guid,
                     app_info.qua,
                 )
-            self.client = Client(
-                self.uin,
-                app_info,
-                im.device,
-                im.sig_info,
-                self.sign,
-                self.use_ipv6,
-                self.use_optimum
-            )
+            self.client = Client(self.uin, app_info, im.device, im.sig_info, self.sign, self.use_ipv6, self.use_optimum)
             for event, handler in self.events.items():
                 self.client.events.subscribe(event, handler)
             self.client.connect()

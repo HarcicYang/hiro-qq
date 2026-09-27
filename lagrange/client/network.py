@@ -7,9 +7,10 @@ import ipaddress
 import sys
 import socket
 import time
-from typing import Callable, overload, Optional
+from typing import overload
+from collections.abc import Callable
 from collections.abc import Coroutine
-from typing_extensions import Literal
+from typing import Literal
 
 from lagrange.info import SigInfo
 from lagrange.utils.log import log
@@ -31,7 +32,7 @@ class ClientNetwork(Connection):
         use_v6=False,
         *,
         optimum: bool = False,
-        manual_address: Optional[tuple[str, int]] = None,
+        manual_address: tuple[str, int] | None = None,
     ):
         if not manual_address:
             self._upstream = self.V6UPSTREAM if use_v6 else self.V4UPSTREAM
@@ -70,7 +71,9 @@ class ClientNetwork(Connection):
         loop = asyncio.get_running_loop()
         try:
             infos = await loop.getaddrinfo(
-                *self._upstream, family=family, type=socket.SOCK_STREAM,
+                *self._upstream,
+                family=family,
+                type=socket.SOCK_STREAM,
             )
         except socket.gaierror as e:
             log.network.error(f"DNS resolve failed: {e}")
@@ -83,12 +86,10 @@ class ClientNetwork(Connection):
                 result.append((ip, port))
         return result
 
-    async def _probe(self, ip: str, port: int) -> Optional[float]:
+    async def _probe(self, ip: str, port: int) -> float | None:
         start = time.monotonic()
         try:
-            _, writer = await asyncio.wait_for(
-                asyncio.open_connection(ip, port), 1
-            )
+            _, writer = await asyncio.wait_for(asyncio.open_connection(ip, port), 1)
             latency = time.monotonic() - start
             writer.close()
             await writer.wait_closed()
@@ -97,12 +98,9 @@ class ClientNetwork(Connection):
             return None
 
     async def _sort_servers(self, candidates: list[tuple[str, int]]) -> list[tuple[float, str, int]]:
-        latencies = await asyncio.gather(
-            *(self._probe(ip, port) for ip, port in candidates)
-        )
+        latencies = await asyncio.gather(*(self._probe(ip, port) for ip, port in candidates))
         sorted_ = sorted(
-            ((lat, ip, port) for (ip, port), lat in zip(candidates, latencies)
-             if lat is not None),
+            ((lat, ip, port) for (ip, port), lat in zip(candidates, latencies) if lat is not None),
             key=lambda x: x[0],
         )
         for lat, ip, _ in sorted_:
@@ -121,9 +119,7 @@ class ClientNetwork(Connection):
         await super().connect()
 
     @overload
-    async def send(
-        self, buf: bytes, wait_seq: Literal[-1], timeout=10
-    ) -> None: ...
+    async def send(self, buf: bytes, wait_seq: Literal[-1], timeout=10) -> None: ...
 
     @overload
     async def send(self, buf: bytes, wait_seq: int, timeout=10) -> SSOPacket: ...  # type: ignore
@@ -184,28 +180,18 @@ class ClientNetwork(Connection):
         packet = parse_sso_frame(sso_body, enc_flag == 2)
 
         if packet.seq > 0:  # uni rsp
-            log.network.debug(
-                f"{packet.seq}({packet.ret_code})-> {packet.cmd or packet.extra}"
-            )
+            log.network.debug(f"{packet.seq}({packet.ret_code})-> {packet.cmd or packet.extra}")
             if packet.ret_code != 0 and packet.seq in self._wait_fut_map:
-                return self._wait_fut_map[packet.seq].set_exception(
-                    AssertionError(packet.ret_code, packet.extra)
-                )
+                return self._wait_fut_map[packet.seq].set_exception(AssertionError(packet.ret_code, packet.extra))
             elif packet.ret_code != 0:
-                return log.network.error(
-                    f"Unexpected error on sso layer: {packet.ret_code}: {packet.extra}"
-                )
+                return log.network.error(f"Unexpected error on sso layer: {packet.ret_code}: {packet.extra}")
 
             if packet.seq not in self._wait_fut_map:
-                log.network.warning(
-                    f"Unknown packet: {packet.cmd}({packet.seq}), ignore"
-                )
+                log.network.warning(f"Unknown packet: {packet.cmd}({packet.seq}), ignore")
             else:
                 self._wait_fut_map[packet.seq].set_result(packet)
         elif packet.seq == 0:
             raise AssertionError(packet.ret_code, packet.extra)
         else:  # server pushed
-            log.network.debug(
-                f"{packet.seq}({packet.ret_code})<- {packet.cmd or packet.extra}"
-            )
+            log.network.debug(f"{packet.seq}({packet.ret_code})<- {packet.cmd or packet.extra}")
             await self._push_store.put(packet)

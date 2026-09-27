@@ -1,11 +1,6 @@
 from .binder import PushDeliver
 from .msg import msg_push_handler
-from .service import (
-    server_kick_handler,
-    server_info_sync_handler,
-    server_push_param_handler,
-    server_push_req_handler
-)
+from .service import server_kick_handler, server_info_sync_handler, server_push_param_handler, server_push_req_handler
 
 
 def bind_services(pd: PushDeliver):

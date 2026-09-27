@@ -1,5 +1,3 @@
-from typing import Optional
-
 from lagrange.utils.binary.protobuf import proto_field, ProtoStruct
 
 
@@ -24,7 +22,16 @@ class E37UploadReq(ProtoStruct):
     flag_support_media_platform: int = proto_field(200, default=1)
 
     @classmethod
-    def build(cls, sender_uid: str, receiver_uid: str, file_size: int, file_name: str, md5_10m: bytes, sha1: bytes, md5: bytes) -> "E37UploadReq":
+    def build(
+        cls,
+        sender_uid: str,
+        receiver_uid: str,
+        file_size: int,
+        file_name: str,
+        md5_10m: bytes,
+        sha1: bytes,
+        md5: bytes,
+    ) -> "E37UploadReq":
         return cls(
             upload=ApplyUploadReqV3(
                 sender_uid=sender_uid,
@@ -110,14 +117,14 @@ class E37DownloadResult(ProtoStruct):
 class E37DownloadRspBody(ProtoStruct):
     field10: int = proto_field(10, default=0)
     state: str = proto_field(20, default="")
-    result: Optional[E37DownloadResult] = proto_field(30, default=None)
-    metadata: Optional[dict] = proto_field(40, default=None)
+    result: E37DownloadResult | None = proto_field(30, default=None)
+    metadata: dict | None = proto_field(40, default=None)
 
 
 class E37DownloadRsp(ProtoStruct):
     command: int = proto_field(1, default=0)
     sub_command: int = proto_field(2, default=0)
-    body: Optional[E37DownloadRspBody] = proto_field(14, default=None)
+    body: E37DownloadRspBody | None = proto_field(14, default=None)
     field50: int = proto_field(50, default=0)
 
 
@@ -144,8 +151,8 @@ class D6Download(ProtoStruct):
 
 
 class D6Req(ProtoStruct):
-    file: Optional[D6Upload] = proto_field(1, default=None)
-    download: Optional[D6Download] = proto_field(3, default=None)
+    file: D6Upload | None = proto_field(1, default=None)
+    download: D6Download | None = proto_field(3, default=None)
 
 
 class D6UploadRsp(ProtoStruct):
@@ -180,15 +187,15 @@ class D6DownloadRsp(ProtoStruct):
 
 
 class D6Rsp(ProtoStruct):
-    upload: Optional[D6UploadRsp] = proto_field(1, default=None)
-    download: Optional[D6DownloadRsp] = proto_field(3, default=None)
+    upload: D6UploadRsp | None = proto_field(1, default=None)
+    download: D6DownloadRsp | None = proto_field(3, default=None)
 
 
 class D9SendFileInfo(ProtoStruct):
     busi_type: int = proto_field(1, default=102)
     file_id: str = proto_field(2)
     field3: int = proto_field(3)
-    field4: Optional[str] = proto_field(4, default=None)
+    field4: str | None = proto_field(4, default=None)
     field5: bool = proto_field(5, default=True)
 
 
@@ -204,6 +211,7 @@ class D9SendFileReq(ProtoStruct):
     @classmethod
     def build(cls, group_uin: int, file_id: str) -> "D9SendFileReq":
         import random
+
         return cls(
             body=D9SendFileBody(
                 group_uin=group_uin,

@@ -109,9 +109,7 @@ def build_uni_packet(
         .write_bytes(proto_encode(head), "u32")
     ).pack()
 
-    sso_packet = (
-        PacketBuilder().write_bytes(sso_header, "u32").write_bytes(body, "u32")
-    ).pack()
+    sso_packet = (PacketBuilder().write_bytes(sso_header, "u32").write_bytes(body, "u32")).pack()
 
     encrypted = qqtea_encrypt(sso_packet, sig_info.d2_key)
 

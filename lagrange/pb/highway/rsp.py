@@ -1,5 +1,3 @@
-from typing import Optional
-
 from lagrange.utils.binary.protobuf import proto_field, ProtoStruct
 
 from .comm import CommonHead, IPv4, IPv6, MsgInfo, PicUrlExtInfo, VideoExtInfo
@@ -12,21 +10,21 @@ class MultiMediaRspHead(ProtoStruct):
 
 
 class RichMediaStorageTransInfo(ProtoStruct):
-    sub_type: Optional[int] = proto_field(1, default=None)
+    sub_type: int | None = proto_field(1, default=None)
     ext_type: int = proto_field(2)
     ext_value: bytes = proto_field(3)
 
 
 class SubFileInfo(ProtoStruct):
     sub_type: int = proto_field(1)
-    ukey: Optional[str] = proto_field(2, default=None)
+    ukey: str | None = proto_field(2, default=None)
     ukey_ttl: int = proto_field(3)
     v4_addrs: list[IPv4] = proto_field(4, default_factory=list)
     v6_addrs: list[IPv6] = proto_field(5, default_factory=list)
 
 
 class UploadRsp(ProtoStruct):
-    ukey: Optional[str] = proto_field(1, default=None)  # None when file exists
+    ukey: str | None = proto_field(1, default=None)  # None when file exists
     ukey_ttl: int = proto_field(2)
     v4_addrs: list[IPv4] = proto_field(3)
     v6_addrs: list[IPv6] = proto_field(4)
@@ -40,21 +38,21 @@ class UploadRsp(ProtoStruct):
 class DownloadInfo(ProtoStruct):
     domain: str = proto_field(1)
     url_path: str = proto_field(2)
-    https_port: Optional[int] = proto_field(3, default=None)
+    https_port: int | None = proto_field(3, default=None)
     v4_addrs: list[IPv4] = proto_field(4, default_factory=list)
     v6_addrs: list[IPv6] = proto_field(5, default_factory=list)
-    pic_info: Optional[PicUrlExtInfo] = proto_field(6, default=None)
-    video_info: Optional[VideoExtInfo] = proto_field(7, default=None)
+    pic_info: PicUrlExtInfo | None = proto_field(6, default=None)
+    video_info: VideoExtInfo | None = proto_field(7, default=None)
 
 
 class DownloadRsp(ProtoStruct):
     rkey: str = proto_field(1)
-    rkey_ttl: Optional[int] = proto_field(2, default=None)
+    rkey_ttl: int | None = proto_field(2, default=None)
     info: DownloadInfo = proto_field(3)
-    rkey_created_at: Optional[int] = proto_field(4, default=None)
+    rkey_created_at: int | None = proto_field(4, default=None)
 
 
 class NTV2RichMediaResp(ProtoStruct):
     rsp_head: MultiMediaRspHead = proto_field(1)
-    upload: Optional[UploadRsp] = proto_field(2, default=None)
-    download: Optional[DownloadRsp] = proto_field(3, default=None)
+    upload: UploadRsp | None = proto_field(2, default=None)
+    download: DownloadRsp | None = proto_field(3, default=None)

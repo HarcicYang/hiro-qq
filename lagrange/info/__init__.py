@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from typing import Union
 
 from .app import AppInfo
 from .device import DeviceInfo
@@ -15,8 +14,8 @@ class InfoManager:
     def __init__(
         self,
         uin: int,
-        device_info_path: Union[str, os.PathLike[str]],
-        sig_info_path: Union[str, os.PathLike[str]],
+        device_info_path: str | os.PathLike[str],
+        sig_info_path: str | os.PathLike[str],
         auto_save=True,
     ):
         self.uin: int = uin

@@ -1,5 +1,4 @@
 from abc import ABC
 
 
-class BaseEvent(ABC):
-    ...
+class BaseEvent(ABC): ...

@@ -1,5 +1,3 @@
-from typing import Optional
-
 from lagrange.utils.binary.protobuf import proto_field, ProtoStruct
 
 
@@ -9,35 +7,35 @@ class CommonHead(ProtoStruct):
 
 
 class PicExtInfo(ProtoStruct):
-    biz_type: Optional[int] = proto_field(1, default=None)
-    summary: Optional[str] = proto_field(2, default=None)
+    biz_type: int | None = proto_field(1, default=None)
+    summary: str | None = proto_field(2, default=None)
     c2c_reserved: bytes = proto_field(11, default=b"")
     troop_reserved: bytes = proto_field(12, default=b"")
 
 
 class VideoExtInfo(ProtoStruct):
-    from_scene: Optional[int] = proto_field(1, default=None)
-    to_scene: Optional[int] = proto_field(2, default=None)
+    from_scene: int | None = proto_field(1, default=None)
+    to_scene: int | None = proto_field(2, default=None)
     pb_reserved: bytes = proto_field(3, default=b"")
 
 
 class AudioExtInfo(ProtoStruct):
-    src_uin: Optional[int] = proto_field(1, default=None)
-    ptt_scene: Optional[int] = proto_field(2, default=None)
-    ptt_type: Optional[int] = proto_field(3, default=None)
-    change_voice: Optional[int] = proto_field(4, default=None)
-    waveform: Optional[bytes] = proto_field(5, default=None)
-    audio_convert_text: Optional[int] = proto_field(6, default=None)
+    src_uin: int | None = proto_field(1, default=None)
+    ptt_scene: int | None = proto_field(2, default=None)
+    ptt_type: int | None = proto_field(3, default=None)
+    change_voice: int | None = proto_field(4, default=None)
+    waveform: bytes | None = proto_field(5, default=None)
+    audio_convert_text: int | None = proto_field(6, default=None)
     bytes_reserved: bytes = proto_field(11, default=b"")
     pb_reserved: bytes = proto_field(12, default=b"")
     general_flags: bytes = proto_field(13, default=b"")
 
 
 class ExtBizInfo(ProtoStruct):
-    pic: Optional[PicExtInfo] = proto_field(1, default_factory=PicExtInfo)
-    video: Optional[VideoExtInfo] = proto_field(2, default_factory=VideoExtInfo)
-    audio: Optional[AudioExtInfo] = proto_field(3, default_factory=AudioExtInfo)
-    bus_type: Optional[bytes] = proto_field(4, default=None)
+    pic: PicExtInfo | None = proto_field(1, default_factory=PicExtInfo)
+    video: VideoExtInfo | None = proto_field(2, default_factory=VideoExtInfo)
+    audio: AudioExtInfo | None = proto_field(3, default_factory=AudioExtInfo)
+    bus_type: bytes | None = proto_field(4, default=None)
 
 
 class PicUrlExtInfo(ProtoStruct):
@@ -72,20 +70,20 @@ class FileInfo(ProtoStruct):
 
 
 class IndexNode(ProtoStruct):
-    info: Optional[FileInfo] = proto_field(1, default=None)
+    info: FileInfo | None = proto_field(1, default=None)
     file_uuid: str = proto_field(2)
-    store_id: Optional[int] = proto_field(3, default=None)
-    upload_time: Optional[int] = proto_field(4, default=None)
-    ttl: Optional[int] = proto_field(5, default=None)
-    sub_type: Optional[int] = proto_field(6, default=None)
+    store_id: int | None = proto_field(3, default=None)
+    upload_time: int | None = proto_field(4, default=None)
+    ttl: int | None = proto_field(5, default=None)
+    sub_type: int | None = proto_field(6, default=None)
 
 
 class MsgInfoBody(ProtoStruct):
     index: IndexNode = proto_field(1)
-    pic: Optional[PicInfo] = proto_field(2, default=None)
-    video: Optional[dict] = proto_field(3, default=None)
-    audio: Optional[dict] = proto_field(4, default=None)
-    file_exists: Optional[bool] = proto_field(5, default=None)
+    pic: PicInfo | None = proto_field(2, default=None)
+    video: dict | None = proto_field(3, default=None)
+    audio: dict | None = proto_field(4, default=None)
+    file_exists: bool | None = proto_field(5, default=None)
     hashsum: bytes = proto_field(6, default=b"")
 
 
@@ -105,6 +103,6 @@ class IPv4(ProtoStruct):
 class IPv6(ProtoStruct):
     out_ip: bytes = proto_field(1)
     out_port: int = proto_field(2)
-    in_ip: Optional[bytes] = proto_field(3, default=None)
-    in_port: Optional[int] = proto_field(4, default=None)
+    in_ip: bytes | None = proto_field(3, default=None)
+    in_port: int | None = proto_field(4, default=None)
     ip_type: int = proto_field(5)

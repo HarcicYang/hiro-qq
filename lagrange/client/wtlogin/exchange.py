@@ -8,9 +8,7 @@ from lagrange.utils.crypto.aes import aes_gcm_decrypt, aes_gcm_encrypt
 from lagrange.utils.crypto.ecdh import ecdh
 from lagrange.utils.operator import timestamp
 
-_enc_key = bytes.fromhex(
-    "e2733bf403149913cbf80c7a95168bd4ca6935ee53cd39764beebe2e007e3aee"
-)
+_enc_key = bytes.fromhex("e2733bf403149913cbf80c7a95168bd4ca6935ee53cd39764beebe2e007e3aee")
 
 
 def build_key_exchange_request(uin: int, guid: str) -> bytes:

@@ -1,4 +1,3 @@
-from typing import Optional
 from lagrange.utils.binary.protobuf import proto_field, ProtoStruct
 
 
@@ -8,8 +7,8 @@ class SendNudge(ProtoStruct):
     """
 
     to_dst1: int = proto_field(1)
-    to_grp: Optional[int] = proto_field(2)
-    to_uin: Optional[int] = proto_field(5)
+    to_grp: int | None = proto_field(2)
+    to_uin: int | None = proto_field(5)
     field6: int = proto_field(6, default=0)
 
 
@@ -37,6 +36,7 @@ class GetClientKeyRsp(ProtoStruct):
     client_key: str = proto_field(3)
     expiration: int = proto_field(4)
 
+
 # BQMallSvc.TabOpReq
 class _TabOpHeader(ProtoStruct):
     f1: int = proto_field(1)
@@ -61,16 +61,11 @@ class TabOpReq(_TabOpHeader):
 
     @classmethod
     def build(cls, face_id: int, face_md5: list[str]) -> "TabOpReq":
-        return cls(
-            f1=3,
-            f2=3127124559,
-            version="10.0.22631",
-            body=_TabOpReq(face_id=face_id, face_md5=face_md5)
-        )
+        return cls(f1=3, f2=3127124559, version="10.0.22631", body=_TabOpReq(face_id=face_id, face_md5=face_md5))
 
 
 class TabOpRsp(_TabOpHeader):
-    body: Optional[_TabOpRsp] = proto_field(5, default=None)
+    body: _TabOpRsp | None = proto_field(5, default=None)
 
     def keys(self) -> list[str]:
         if not self.body:

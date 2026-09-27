@@ -1,5 +1,3 @@
-from typing import Optional
-
 from lagrange.utils.binary.protobuf import proto_field, ProtoStruct
 
 
@@ -40,9 +38,9 @@ class FriendRequestNotify(ProtoStruct):
 
 
 class PBFriendRequest(ProtoStruct):
-    info: Optional[FriendRequestInfo] = proto_field(1, default=None)
-    notify: Optional[FriendRequestNotify] = proto_field(2, default=None)
-    result: Optional[FriendRequestResult] = proto_field(3, default=None)
+    info: FriendRequestInfo | None = proto_field(1, default=None)
+    notify: FriendRequestNotify | None = proto_field(2, default=None)
+    result: FriendRequestResult | None = proto_field(3, default=None)
 
 
 class GrayTipTemplateParam(ProtoStruct):

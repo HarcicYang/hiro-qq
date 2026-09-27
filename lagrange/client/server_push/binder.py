@@ -1,4 +1,5 @@
-from typing import Any, Callable, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
+from collections.abc import Callable
 from collections.abc import Coroutine
 
 from lagrange.client.wtlogin.sso import SSOPacket
@@ -12,9 +13,7 @@ if TYPE_CHECKING:
 class PushDeliver:
     def __init__(self, client: "Client"):
         self._client = client
-        self._handle_map: dict[
-            str, Callable[["Client", SSOPacket], Coroutine[None, None, Any]]
-        ] = {}
+        self._handle_map: dict[str, Callable[["Client", SSOPacket], Coroutine[None, None, Any]]] = {}
 
     def subscribe(self, cmd: str, func: Callable[["Client", SSOPacket], Coroutine[None, None, Any]]):
         self._handle_map[cmd] = func

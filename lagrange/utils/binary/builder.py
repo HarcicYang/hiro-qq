@@ -1,16 +1,15 @@
 import struct
-from typing import Union
 
-from typing_extensions import Self, TypeAlias
-from typing import Optional
+from typing_extensions import Self
+from typing import TypeAlias
 
 from lagrange.utils.crypto.tea import qqtea_encrypt
 
-BYTES_LIKE: TypeAlias = Union[bytes, bytearray, memoryview]
+BYTES_LIKE: TypeAlias = bytes | bytearray | memoryview
 
 
 class Builder:
-    def __init__(self, encrypt_key: Optional[bytes] = None):
+    def __init__(self, encrypt_key: bytes | None = None):
         self._buffer = bytearray()
         self._encrypt_key = encrypt_key
 
@@ -38,7 +37,7 @@ class Builder:
         self._buffer += struct.pack(f">{struct_fmt}", *args)
         return self
 
-    def pack(self, typ: Optional[int] = None) -> bytes:
+    def pack(self, typ: int | None = None) -> bytes:
         if typ is not None:
             return struct.pack(">HH", typ, len(self.data)) + self.data
         return self.data
