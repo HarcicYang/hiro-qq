@@ -118,14 +118,14 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
     if message is None:
         logger.debug(f"msg_push has no message body: {pkg}")
         return
-    buf2 = message.buf2
-    if buf2 is None:
-        logger.debug(f"msg_push has no protobuf payload: {pkg}")
-        return
     if typ == 82:  # grp msg
         return await parse_grp_msg(client, pkg)
     elif typ in [166, 208, 529]:  # frd msg
         return await parse_friend_msg(client, pkg)
+    buf2 = message.buf2
+    if buf2 is None:
+        logger.debug(f"msg_push has no protobuf payload: {pkg}")
+        return
     elif typ == 33:  # member joined
         pb = MemberChanged.decode(buf2)
         return GroupMemberJoined(

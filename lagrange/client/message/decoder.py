@@ -58,14 +58,14 @@ def _parse_multimsg_json(content: bytes) -> elems.MulitMsg | None:
 
 def parse_msg_info(pb: MsgPushBody) -> tuple[int, str, int, int, int]:
     message = pb.message
-    if message is None or message.body is None:
-        raise ValueError("message body is missing")
+    if message is None:
+        raise ValueError("message is missing")
 
     user_id = pb.response_head.from_uin or 0
     uid = pb.response_head.from_uid or ""
     seq = pb.content_head.seq
     time = pb.content_head.timestamp
-    rand = (message.body.attrs or {}).get(3, -1)
+    rand = (message.body.attrs or {}).get(3, -1) if message.body else -1
 
     return user_id, uid, seq, time, rand
 

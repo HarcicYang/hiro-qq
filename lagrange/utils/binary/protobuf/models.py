@@ -1,5 +1,6 @@
 import inspect
 import sys
+import types
 import warnings
 from dataclasses import MISSING
 from types import GenericAlias
@@ -57,8 +58,10 @@ class ProtoField:
 
     @property
     def type_without_optional(self) -> Any:
-        if get_origin(self.type) is Union:
-            return get_args(self.type)[0]
+        if get_origin(self.type) in (Union, types.UnionType):
+            args = [arg for arg in get_args(self.type) if arg is not NoneType]
+            if len(args) == 1:
+                return args[0]
         return self.type
 
 
@@ -126,7 +129,7 @@ def _decode(typ: type[_ProtoTypes], raw):
             ret.append(_decode(real_typ, raw))
         return ret
     elif isinstance(typ, type) and issubclass(typ, ProtoStruct):
-        return typ.decode(raw)
+        return typ.decode(raw) if raw else None
     elif typ is str:
         return raw.decode(errors="ignore")
     elif typ is dict:
