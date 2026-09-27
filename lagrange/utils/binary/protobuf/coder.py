@@ -6,6 +6,7 @@ from lagrange.utils.binary.builder import Builder
 from lagrange.utils.binary.reader import Reader
 
 Proto: TypeAlias = dict[int, "ProtoEncodable"]
+ProtoInput: TypeAlias = Mapping[int, object]
 LengthDelimited: TypeAlias = Union[str, "Proto", bytes]
 ProtoEncodable: TypeAlias = Union[
     int,
@@ -123,9 +124,9 @@ def _encode(builder: ProtoBuilder, tag: int, value: ProtoEncodable):
         raise AssertionError
 
 
-def proto_decode(data: bytes, max_layer=-1) -> ProtoDecoded:
+def proto_decode(data: bytes, max_layer: int = -1) -> ProtoDecoded:
     reader = ProtoReader(data)
-    proto = {}
+    proto: Proto = {}
 
     while reader.remain > 0:
         leaf = reader.read_varint()
@@ -151,17 +152,20 @@ def proto_decode(data: bytes, max_layer=-1) -> ProtoDecoded:
         else:
             raise AssertionError(wire_type)
 
+        proto_value = cast(ProtoEncodable, value)
         if tag in proto:  # repeated elem
-            if not isinstance(proto[tag], list):
-                proto[tag] = [proto[tag]]
-            proto[tag].append(value)
+            previous = proto[tag]
+            if isinstance(previous, list):
+                previous.append(proto_value)
+            else:
+                proto[tag] = [previous, proto_value]
         else:
-            proto[tag] = value
+            proto[tag] = proto_value
 
     return ProtoDecoded(proto)
 
 
-def proto_encode(proto: Proto) -> bytes:
+def proto_encode(proto: ProtoInput) -> bytes:
     builder = ProtoBuilder()
 
     for tag in proto:
@@ -169,8 +173,8 @@ def proto_encode(proto: Proto) -> bytes:
 
         if isinstance(value, list):
             for i in value:
-                _encode(builder, tag, i)
+                _encode(builder, tag, cast(ProtoEncodable, i))
         else:
-            _encode(builder, tag, value)
+            _encode(builder, tag, cast(ProtoEncodable, value))
 
     return bytes(builder.data)

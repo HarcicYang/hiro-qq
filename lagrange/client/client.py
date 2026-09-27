@@ -301,6 +301,8 @@ class Client(BaseClient):
 
     async def upload_grp_file(self, file: BinaryIO, grp_id: int, target_directory: str = "/", file_name: Optional[str] = None) -> File:
         f = await self._highway.upload_group_file(file, grp_id, target_directory, file_name or "")
+        if f.file_id is None:
+            raise ValueError("group file id is missing")
         await self._highway.send_group_file(grp_id, f.file_id)
         return f
 

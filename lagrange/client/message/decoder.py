@@ -14,7 +14,7 @@ from .types import Element
 from lagrange.utils.binary.reader import Reader
 from lagrange.utils.binary.protobuf import proto_encode
 from lagrange.pb.message.rich_text.elems import GroupFileExtra, FileExtra, PBKeyboard
-from lagrange.pb.highway.comm import MsgInfo
+from lagrange.pb.highway.comm import FileInfo, IndexNode, MsgInfo
 
 if TYPE_CHECKING:
     from lagrange.client.client import Client
@@ -57,54 +57,81 @@ def _parse_multimsg_json(content: bytes) -> Union[elems.MulitMsg, None]:
 
 
 def parse_msg_info(pb: MsgPushBody) -> tuple[int, str, int, int, int]:
-    user_id = pb.response_head.from_uin
-    uid = pb.response_head.from_uid
+    message = pb.message
+    if message is None or message.body is None:
+        raise ValueError("message body is missing")
+
+    user_id = pb.response_head.from_uin or 0
+    uid = pb.response_head.from_uid or ""
     seq = pb.content_head.seq
     time = pb.content_head.timestamp
-    rand = pb.message.body.attrs.get(3, -1)
+    rand = (message.body.attrs or {}).get(3, -1)
 
     return user_id, uid, seq, time, rand
 
 
 def parse_friend_info(pkg: MsgPushBody) -> tuple[int, str, int, str]:
     info = pkg.response_head
-    from_uin = info.from_uin
-    from_uid = info.from_uid
-    to_uin = info.to_uin
-    to_uid = info.to_uid
+    from_uin = info.from_uin or 0
+    from_uid = info.from_uid or ""
+    to_uin = info.to_uin or 0
+    to_uid = info.to_uid or ""
 
     return from_uin, from_uid, to_uin, to_uid
+
+
+def _file_info_from_index(index: IndexNode) -> FileInfo:
+    if index.info is None:
+        raise ValueError("file info is missing")
+    return index.info
 
 
 async def parse_msg_new(
     client: "Client", pkg: MsgPushBody, fri_id: Union[str, None] = None, grp_id: Union[int, None] = None
 ) -> Sequence[Element]:
-    if not pkg.message or not pkg.message.body:
+    message = pkg.message
+    if message is None:
+        return []
+    if not message.body:
         if pkg.content_head.sub_type == 4:
-            data = FileExtra.decode(pkg.message.buf2)
+            if message.buf2 is None:
+                raise ValueError("file message body is missing")
+            data = FileExtra.decode(message.buf2)
+            file = data.file
+            if (
+                file.file_size is None
+                or file.file_name is None
+                or file.file_md5 is None
+                or file.file_uuid is None
+                or file.file_hash is None
+            ):
+                raise ValueError("file message is missing required fields")
             f = elems.File.pri_paste_build(
-                file_size=data.file.file_size,
-                file_name=data.file.file_name,
-                file_md5=data.file.file_md5,
-                file_uuid=data.file.file_uuid,
-                file_hash=data.file.file_hash,
+                file_size=file.file_size,
+                file_name=file.file_name,
+                file_md5=file.file_md5,
+                file_uuid=file.file_uuid,
+                file_hash=file.file_hash,
             )
-            f.file_url = await client.fetch_friend_file_url(data.file.file_uuid, data.file.file_hash, client.uid)
+            f.file_url = await client.fetch_friend_file_url(file.file_uuid, file.file_hash, client.uid)
             return [f]
-    rich: RichText = pkg.message.body
+        return []
+    rich: RichText = message.body
     if rich.ptt:
         ptt = rich.ptt
         file_key = ptt.group_file_key if ptt.group_file_key else ptt.friend_file_key
+        if file_key is None:
+            raise ValueError("audio file key is missing")
         return [
             elems.Audio(
                 name=ptt.name,
                 size=ptt.size,
-                id=ptt.file_id,
+                id=ptt.file_id or 0,
                 md5=ptt.md5,
                 time=ptt.time,
-                file_key=ptt.group_file_key if ptt.group_file_key else ptt.friend_file_key,
+                file_key=file_key,
                 qmsg=None,
-                url=await client.fetch_audio_url(file_key, uid=fri_id, gid=grp_id),
+                url=await client.fetch_audio_url(file_key, uid=fri_id or "", gid=grp_id or 0),
             )
         ]
     el: list[Elems] = rich.content
@@ -137,11 +164,14 @@ async def parse_msg_new(
                     )
             else:
                 raise AssertionError("Invalid message")
-        elif raw.general_flags and raw.general_flags.PbReserve:
+        elif raw.general_flags:
             gf = raw.general_flags
-            if gf.PbReserve.grey:
-                content = json.loads(gf.PbReserve.grey.body.content)
-                msg_chain.append(elems.GreyTips(text=content["gray_tip"]))
+            reserve = gf.PbReserve
+            if reserve:
+                grey = reserve.grey
+                if grey:
+                    content = json.loads(grey.body.content)
+                    msg_chain.append(elems.GreyTips(text=content["gray_tip"]))
         elif raw.face:  # q emoji
             emo = raw.face
             msg_chain.append(elems.Emoji(id=emo.index))
@@ -168,7 +198,7 @@ async def parse_msg_new(
                     display_name=img.args.display_name,
                     width=img.width,
                     height=img.height,
-                    url="https://gchat.qpic.cn" + img.original_url,
+                    url="https://gchat.qpic.cn" + (img.original_url or ""),
                     is_emoji=img.args.is_emoji,
                     qmsg=None,
                 )
@@ -184,7 +214,7 @@ async def parse_msg_new(
                     display_name=img.args.display_name,
                     width=img.width,
                     height=img.height,
-                    url="https://gchat.qpic.cn" + img.origin_path,
+                    url="https://gchat.qpic.cn" + (img.origin_path or ""),
                     is_emoji=img.args.is_emoji,
                     qmsg=None,
                 )
@@ -205,23 +235,32 @@ async def parse_msg_new(
                 msg_chain.append(elems.Markdown(content=md_c.decode()))
             if common.service_type == 46:
                 kb = PBKeyboard.decode(proto_encode(common.pb_elem)).keyboard
-                msg_chain.append(elems.Keyboard(content=kb.content, bot_appid=kb.bot_appid))
+                msg_chain.append(
+                    elems.Keyboard(
+                        content=cast(list[elems.InlineKeyboard] | None, kb.content),
+                        bot_appid=kb.bot_appid,
+                    )
+                )
             if common.service_type == 48 and common.bus_type in (11, 21):
                 extra = MsgInfo.decode(proto_encode(common.pb_elem))
                 index = extra.body[0].index
+                info = _file_info_from_index(index)
                 if common.bus_type == 21:
-                    url = await client.fetch_video_url(index, gid=pkg.response_head.rsp_grp.gid)
+                    rsp_grp = pkg.response_head.rsp_grp
+                    if rsp_grp is None:
+                        raise ValueError("group response info is missing")
+                    url = await client.fetch_video_url(index, gid=rsp_grp.gid)
                 else:
                     url = await client.fetch_video_url(index, uid=client.uid)
                 msg_chain.append(
                     elems.Video(
-                        name=index.info.name,
-                        size=index.info.size,
+                        name=info.name,
+                        size=info.size,
                         id=0,
-                        md5=bytes.fromhex(index.info.hash),
-                        width=index.info.width,
-                        height=index.info.height,
-                        time=index.info.time,
+                        md5=bytes.fromhex(info.hash),
+                        width=info.width,
+                        height=info.height,
+                        time=info.time,
                         file_key=index.file_uuid,
                         url=url,
                         qmsg=None,
@@ -230,25 +269,33 @@ async def parse_msg_new(
             if common.bus_type in [10, 20]:  # 10: friend, 20: group
                 extra = MsgInfo.decode(proto_encode(raw.common_elem.pb_elem))
                 index = extra.body[0].index
+                info = _file_info_from_index(index)
                 uid = client.uid
-                gid = pkg.response_head.rsp_grp.gid if common.bus_type == 20 else None
+                if common.bus_type == 20:
+                    rsp_grp = pkg.response_head.rsp_grp
+                    if rsp_grp is None:
+                        raise ValueError("group response info is missing")
+                    gid = rsp_grp.gid
+                else:
+                    gid = 0
                 url = await client.fetch_image_url(
                     bus_type=cast(Literal[10, 20], common.bus_type),
                     node=index,
                     uid=uid,
                     gid=gid,
                 )
+                pic = extra.biz_info.pic
                 msg_chain.append(
                     elems.Image(
-                        name=index.info.name,
-                        size=index.info.size,
+                        name=info.name,
+                        size=info.size,
                         id=0,
-                        md5=bytes.fromhex(index.info.hash),
-                        display_name=extra.biz_info.pic.summary if extra.biz_info.pic.summary else "[图片]",
-                        width=index.info.width,
-                        height=index.info.height,
+                        md5=bytes.fromhex(info.hash),
+                        display_name=pic.summary if pic and pic.summary else "[图片]",
+                        width=info.width,
+                        height=info.height,
                         url=url,
-                        is_emoji=(extra.biz_info.pic.biz_type or 0) == 1,
+                        is_emoji=bool(pic and (pic.biz_type or 0) == 1),
                         qmsg=None,
                         msg_info=extra,
                         bus_type=common.bus_type,
@@ -267,6 +314,8 @@ async def parse_msg_new(
                     file_md5=file_extra.inner.info.file_md5,
                     file_id=file_extra.inner.info.file_id,
                 )
+                if grp_id is None:
+                    raise ValueError("group id is missing")
                 f.file_url = await client.fetch_grp_file_url(grp_id, file_extra.inner.info.file_id)
                 msg_chain.append(f)
         elif raw.rich_msg:
@@ -310,7 +359,7 @@ async def parse_msg_new(
                     seq=src.seq,
                     uin=src.uin,
                     timestamp=src.timestamp,
-                    uid=src.pb_reserved.uid,
+                    uid=src.pb_reserved.uid or "" if src.pb_reserved else "",
                     msg=msg_text,
                 )
             )
@@ -398,11 +447,14 @@ async def parse_friend_msg(client: "Client", pkg: MsgPushBody) -> FriendMessage:
 async def parse_grp_msg(client: "Client", pkg: MsgPushBody) -> GroupMessage:
     user_id, uid, seq, time, rand = parse_msg_info(pkg)
 
-    grp_id = pkg.response_head.rsp_grp.gid
-    grp_name = pkg.response_head.rsp_grp.grp_name
-    sub_id = pkg.response_head.sigmap  # some client may not report it, old pcqq?
-    sender_name = pkg.response_head.rsp_grp.sender_name
-    sender_type = pkg.response_head.type
+    rsp_grp = pkg.response_head.rsp_grp
+    if rsp_grp is None:
+        raise ValueError("group response info is missing")
+    grp_id = rsp_grp.gid
+    grp_name = rsp_grp.grp_name or ""
+    sub_id = pkg.response_head.sigmap or 0  # some client may not report it, old pcqq?
+    sender_name = rsp_grp.sender_name
+    sender_type = pkg.response_head.type or 0
 
     if isinstance(grp_name, bytes):  # unexpected end of data
         grp_name = grp_name.decode("utf-8", errors="ignore")

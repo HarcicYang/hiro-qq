@@ -431,6 +431,8 @@ class HighWaySession:
             raise ConnectionError(ret.rsp_head.ret_code, ret.rsp_head.msg)
 
         index = ret.upload.msg_info.body[0].index
+        if index.info is None:
+            raise ConnectionError("video info is missing")
         if ret.upload.ukey:
             self.logger.debug("video not found, uploading...")
             ext = NTV2RichMediaHighwayExt.build(
@@ -441,12 +443,13 @@ class HighWaySession:
                 1048576,
                 fsha1,
             ).encode()
-            if not self._session_sig:
+            session_sig = self._session_sig
+            if session_sig is None:
                 raise ConnectionError("session sig not found, try again later")
             await self.upload_controller(
                 file,
                 cmd_id=1005 if gid else 1001,
-                ticket=self._session_sig,
+                ticket=session_sig,
                 ext=ext,
                 addrs=self._session_addr_list,
                 bs=1048576,
@@ -465,10 +468,13 @@ class HighWaySession:
                     1048576,
                     tsha1,
                 ).encode()
+                session_sig = self._session_sig
+                if session_sig is None:
+                    raise ConnectionError("session sig not found, try again later")
                 await self.upload_controller(
                     thumb,
                     cmd_id=1006 if gid else 1002,
-                    ticket=self._session_sig,
+                    ticket=session_sig,
                     ext=ext,
                     addrs=self._session_addr_list,
                     bs=1048576,
@@ -547,10 +553,13 @@ class HighWaySession:
                     ),
                 )
             ).encode()
+            session_sig = self._session_sig
+            if session_sig is None:
+                raise ConnectionError("session sig not found, try again later")
             await self.upload_controller(
                 file,
                 cmd_id=95,
-                ticket=self._session_sig,
+                ticket=session_sig,
                 ext=ext,
                 addrs=self._session_addr_list,
             )
@@ -616,10 +625,13 @@ class HighWaySession:
                     ),
                 )
             ).encode()
+            session_sig = self._session_sig
+            if session_sig is None:
+                raise ConnectionError("session sig not found, try again later")
             await self.upload_controller(
                 file,
                 cmd_id=71,
-                ticket=self._session_sig,
+                ticket=session_sig,
                 ext=ext,
                 addrs=self._session_addr_list,
             )

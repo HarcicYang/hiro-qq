@@ -56,7 +56,7 @@ SIGN_PKG_LIST = [
 def sign_provider(upstream_url: str, uin: int, guid: str, qua: str):
     purl = parse.urlparse(upstream_url)
     token = purl.username or None
-    netloc = purl.hostname + (f":{purl.port}" if purl.port else "")
+    netloc = (purl.hostname or "") + (f":{purl.port}" if purl.port else "")
     url = parse.urlunparse(purl._replace(netloc=netloc))
 
     async def get_sign(cmd: str, seq: int, buf: bytes) -> dict:

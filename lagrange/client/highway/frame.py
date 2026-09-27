@@ -11,7 +11,7 @@ def write_frame(head: bytes, body: bytes) -> bytes:
     buf += head
     buf += body
     buf.append(0x29)
-    return buf
+    return bytes(buf)
 
 
 def read_frame(

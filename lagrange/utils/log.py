@@ -1,7 +1,7 @@
 import inspect
 import logging
 import sys
-from typing import ClassVar, Callable, Optional, Protocol, Union
+from typing import ClassVar, Callable, Optional, Protocol, Union, cast
 
 __all__ = ["log", "install_loguru"]
 
@@ -174,6 +174,6 @@ def install_loguru():
 
     log.set_level = _config
 
-    _Logger.get_logger = lambda self: logger.patch(
-        lambda r: r.update(name=self.context)
+    _Logger.get_logger = lambda self: cast(
+        Logger, logger.patch(lambda r: r.update(name=self.context))
     )

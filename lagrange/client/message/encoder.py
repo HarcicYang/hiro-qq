@@ -154,6 +154,8 @@ async def build_message(
                         )
                     )
                 else:
+                    if msg.qmsg is None:
+                        raise ValueError("not-online image body is missing")
                     msg_pb.append(Elems(not_online_image=NotOnlineImage.decode(msg.qmsg)))
             elif isinstance(msg, Video):
                 if not msg.msg_info:
@@ -283,6 +285,8 @@ async def build_message(
                 time=audio.time,
             )
         else:  # friend
+            if audio.qmsg is None:
+                raise ValueError("friend audio body is missing")
             msg_ptt = Ptt.decode(audio.qmsg)
     return RichText(content=msg_pb, ptt=msg_ptt)
 

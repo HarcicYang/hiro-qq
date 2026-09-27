@@ -1,24 +1,26 @@
 [project]
-name = "lagrange-python"
-version = "0.1.8"
-description = "An Python Implementation of NTQQ PC Protocol"
+name = "hiro-qq"
+version = "0.1.9"
+description = "An Python Implementation of NTQQ PC Protocol, orignates from lagrange-python"
+readme = "README.md"
+license = "LGPL-2.0-or-later"
+license-files = ["LICENSE"]
 authors = [
     {name="linwenxuan05"},
     {name="wyapx"},
+    {name="Harcic"}
 ]
 dependencies = [
-    "typing-extensions>=4.7.0",
     "cryptography>=46.0.7",
     "qrcode>=7.4.2",
+    "typing-extensions>=4.7.0",
 ]
 keywords = ["QQ", "Tencent", "NTQQ", "Framework", "Bot", "asyncio"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Framework :: AsyncIO",
     "Operating System :: OS Independent",
-    "License :: OSI Approved :: GNU Lesser General Public License v2 or later (LGPLv2+)",
     "Programming Language :: Python",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -32,32 +34,30 @@ loguru = [
     "loguru>=0.7.2",
 ]
 
-[tool.pdm]
-distribution = true
-
-[tool.pdm.build]
-includes = ["lagrange"]
-
-[tool.pdm.dev-dependencies]
+[dependency-groups]
 dev = [
     "loguru>=0.7.2",
+    "pyrefly>=1.2.0",
+    "ruff>=0.16.1",
 ]
+
 [build-system]
-requires = ["pdm-backend"]
-build-backend = "pdm.backend"
+requires = ["uv_build>=0.12.13,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "lagrange"
+module-root = ""
 
 [tool.ruff]
 line-length = 120
-target-version = "py39"
-exclude = ["pdm_build.py"]
+target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "UP", "C", "T", "Q"]
 ignore = ["E402", "F403", "F405", "C901", "UP037"]
 
-[tool.pyright]
-pythonPlatform = "All"
-pythonVersion = "3.9"
-typeCheckingMode = "basic"
-reportShadowedImports = false
-disableBytesTypePromotions = true
+[tool.pyrefly]
+preset = "default"
+python-version = "3.10"
+project-includes = ["lagrange"]

@@ -1,11 +1,10 @@
 import re
 from dataclasses import dataclass
-from typing import TypedDict, TypeVar, Union
+from typing import Any, TypedDict, cast
 
 from .serialize import JsonSerializer
 
 
-_T = TypeVar("_T", bound=dict[str, Union[int, str]])
 _trans_map = {
     "SsoVersion": "pt_os_version",
     "WtLoginSdk": "wtlogin_sdk",
@@ -14,8 +13,8 @@ _trans_map = {
     "SubSigMap": "sub_sigmap",
 }
 
-def _translate_appinfo(s: _T) -> _T:
-    out: _T = {}
+def _translate_appinfo(s: dict[str, int | str]) -> dict[str, int | str]:
+    out: dict[str, int | str] = {}
     for k, v in s.items():
         if k in _trans_map:
             out[_trans_map[k]] = v
@@ -69,8 +68,8 @@ class AppInfo(JsonSerializer):
         return f"V1_{kernel}_NQ_{self.current_version}_RDM_B"
 
     @classmethod
-    def load_custom(cls, d: _T) -> "AppInfo":
-        return cls(**_translate_appinfo(d))
+    def load_custom(cls, d: dict[str, int | str]) -> "AppInfo":
+        return cls(**cast(Any, _translate_appinfo(d)))
 
 
 class AppInfoDict(TypedDict):

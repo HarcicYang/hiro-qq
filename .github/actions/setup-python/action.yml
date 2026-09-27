@@ -10,12 +10,14 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: pdm-project/setup-pdm@v3
-      name: Setup PDM
+    - uses: astral-sh/setup-uv@v5
+      name: Setup uv
+
+    - uses: actions/setup-python@v5
+      name: Setup Python
       with:
         python-version: ${{ inputs.python-version }}
         architecture: "x64"
-        cache: true
 
-    - run: pdm sync -G:all
+    - run: uv sync --locked --all-groups --all-extras
       shell: bash

@@ -14,11 +14,12 @@ class Builder:
         self._buffer = bytearray()
         self._encrypt_key = encrypt_key
 
-    def __iadd__(self, other):
+    def __iadd__(self, other: BYTES_LIKE) -> Self:
         if isinstance(other, (bytes, bytearray, memoryview)):
             self._buffer += other
         else:
             raise TypeError(f"buffer must be bytes or bytearray, not {type(other)}")
+        return self
 
     def __len__(self) -> int:
         return len(self._buffer)
@@ -30,10 +31,10 @@ class Builder:
     @property
     def data(self) -> bytes:
         if self._encrypt_key:
-            return qqtea_encrypt(self._buffer, self._encrypt_key)
-        return self.buffer
+            return qqtea_encrypt(bytes(self._buffer), self._encrypt_key)
+        return bytes(self.buffer)
 
-    def _pack(self, struct_fmt: str, *args) -> Self:
+    def _pack(self, struct_fmt: str, *args: object) -> Self:
         self._buffer += struct.pack(f">{struct_fmt}", *args)
         return self
 
@@ -57,7 +58,7 @@ class Builder:
     def write_string(self, s: str) -> Self:
         return self.write_bytes(s.encode(), with_length=True)
 
-    def write_struct(self, struct_fmt: str, *args) -> Self:
+    def write_struct(self, struct_fmt: str, *args: object) -> Self:
         return self._pack(struct_fmt, *args)
 
     def write_u8(self, v: int) -> Self:

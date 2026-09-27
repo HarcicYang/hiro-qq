@@ -47,7 +47,7 @@ class Reader:
     def read_bytes(self, length: int) -> bytes:
         v = self._buffer[self._pos : self._pos + length]
         self._pos += length
-        return v
+        return bytes(v)
 
     def read_string(self, length: int) -> str:
         return self.read_bytes(length).decode("utf-8")
@@ -73,7 +73,7 @@ class Reader:
                 length = self.read_u64()
         v = self._buffer[self._pos : self._pos + length]
         self._pos += length
-        return v
+        return bytes(v)
 
     def read_string_with_length(self, prefix: LENGTH_PREFIX, with_prefix=True) -> str:
         return self.read_bytes_with_length(prefix, with_prefix).decode("utf-8")

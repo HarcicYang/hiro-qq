@@ -4,7 +4,7 @@ import operator
 import sys
 import types
 import typing
-from typing import ForwardRef, List
+from typing import Any, ForwardRef, List, cast
 import typing_extensions
 from typing_extensions import ParamSpec
 
@@ -71,7 +71,7 @@ else:
             if ev_args == t.__args__:  # type: ignore
                 return t
             if isinstance(t, types.GenericAlias):
-                return types.GenericAlias(t.__origin__, ev_args)
+                return types.GenericAlias(cast(Any, t.__origin__), ev_args)
             if hasattr(types, "UnionType") and isinstance(t, types.UnionType):  # type: ignore
                 return functools.reduce(operator.or_, ev_args)
             return t.copy_with(ev_args)  # type: ignore

@@ -1,3 +1,5 @@
+from typing import Any
+
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
 from lagrange.utils.binary.protobuf import proto_decode, proto_encode
 from lagrange.utils.crypto.aes import aes_gcm_decrypt, aes_gcm_encrypt
@@ -19,7 +21,7 @@ def build_ntlogin_request(
     captcha: list,
     credential: bytes,
 ) -> bytes:
-    body = {
+    body: dict[int, Any] = {
         1: {
             1: {1: str(uin)},
             2: {
@@ -52,6 +54,8 @@ def parse_ntlogin_response(
 
     if not rsp.head.error and rsp.body and rsp.body.credentials:
         cr = rsp.body.credentials
+        if cr.tgt is None or cr.d2 is None or cr.d2_key is None or cr.temp_pwd is None:
+            raise ValueError("login credentials are incomplete")
         sig.tgt = cr.tgt
         sig.d2 = cr.d2
         sig.d2_key = cr.d2_key
@@ -62,17 +66,23 @@ def parse_ntlogin_response(
 
         return LoginErrorCode.success
     else:
-        ret = LoginErrorCode(rsp.head.error.code)
+        error = rsp.head.error
+        if error is None:
+            raise ValueError("login error details are missing")
+        ret = LoginErrorCode(error.code)
         if ret == LoginErrorCode.captcha_verify:
-            sig.cookies = rsp.head.cookies.str
-            verify_url = rsp.body.verify.url
+            cookies = rsp.head.cookies
+            verify = rsp.body.verify if rsp.body else None
+            if cookies is None or verify is None:
+                raise ValueError("login verification details are missing")
+            sig.cookies = cookies.str
+            verify_url = verify.url
             aid = verify_url.split("&sid=")[1].split("&")[0]
             captcha[2] = aid
             log.login.warning("need captcha verify: " + verify_url)
         else:
-            stat = rsp.head.error
-            title = stat.title
-            content = stat.message
+            title = error.title
+            content = error.message
             log.login.error(
                 f"Login fail on ntlogin({ret.name}): [{title}]>{content}"
             )

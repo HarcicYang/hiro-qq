@@ -98,7 +98,10 @@ def qqtea_encrypt(data: bytes, key: bytes) -> bytes:
 
 
 def qqtea_decrypt(data: bytes, key: bytes) -> bytes:
-    return _TEA(key).decrypt(data)
+    result = _TEA(key).decrypt(data)
+    if result is None:
+        raise ValueError("Invalid QQ TEA ciphertext")
+    return result
 
 
 try:

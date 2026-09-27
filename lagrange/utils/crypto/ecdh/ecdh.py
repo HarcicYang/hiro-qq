@@ -50,7 +50,7 @@ class ECDHProvider:
                 if (((self._public.y % 2) == 0) ^ ((self._public.y > 0) < 0))
                 else 0x03
             )
-            return result
+            return bytes(result)
 
         x = self._public.x.to_bytes(self._curve.size, "big")
         y = self._public.y.to_bytes(self._curve.size, "big")

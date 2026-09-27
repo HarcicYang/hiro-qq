@@ -1,4 +1,5 @@
 import hashlib
+from typing import cast
 
 from lagrange.info import SigInfo
 from lagrange.utils.binary.builder import Builder
@@ -42,8 +43,12 @@ def build_key_exchange_request(uin: int, guid: str) -> bytes:
 def parse_key_exchange_response(response: bytes, sig: SigInfo):
     p = proto_decode(response, 0)
 
-    share_key = ecdh["prime256v1"].exchange(p[3])
-    dec_pb = proto_decode(aes_gcm_decrypt(p[1], share_key), 0)
+    share_key = ecdh["prime256v1"].exchange(cast(bytes, p[3]))
+    dec_pb = proto_decode(aes_gcm_decrypt(cast(bytes, p[1]), share_key), 0)
+    exchange_key = dec_pb[1]
+    key_sig = dec_pb[2]
+    if not isinstance(exchange_key, bytes) or not isinstance(key_sig, bytes):
+        raise ValueError("invalid key exchange response")
 
-    sig.exchange_key = dec_pb[1]
-    sig.key_sig = dec_pb[2]
+    sig.exchange_key = exchange_key
+    sig.key_sig = key_sig

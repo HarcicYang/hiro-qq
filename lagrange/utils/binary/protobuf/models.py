@@ -6,7 +6,6 @@ from typing import cast, TypeVar, Union, Any, Callable, overload, get_origin, ge
 from collections.abc import Mapping
 from typing_extensions import Self, TypeAlias, dataclass_transform
 from typing import Optional, ClassVar
-import typing
 
 from .coder import Proto, proto_decode, proto_encode
 from .util import eval_type
@@ -281,7 +280,7 @@ class ProtoStruct:
     @classmethod
     def decode(cls, data: bytes) -> Self:
         if not data:
-            return None  # type: ignore
+            raise ValueError(f"Cannot decode empty protobuf for {cls.__name__}")
         pb_dict: Proto = proto_decode(data, 0).proto
 
         kwargs = {
