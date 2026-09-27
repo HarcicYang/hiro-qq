@@ -111,6 +111,7 @@ class HttpCat:
                     length = int(len_hex, 16)
                     if length:
                         bs += await reader.readexactly(length)
+                        await cls._read_line(reader)  # CRLF that ends the chunk
                     else:
                         break
                 else:
