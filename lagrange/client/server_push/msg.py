@@ -136,8 +136,8 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
     elif typ == 34:  # member exit
         pb = MemberChanged.decode(buf2)
         return GroupMemberQuit(
-            grp_id=pb.uin,
-            uin=pkg.response_head.from_uin or 0,
+            grp_id=pkg.response_head.from_uin or 0,
+            uin=pb.uin,
             uid=pb.uid,
             operator_uid=pb.operator_uid,
             exit_type=pb.exit_type or 0,
