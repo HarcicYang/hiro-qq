@@ -356,6 +356,7 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
                 time=info.time,
                 rand=info.rand,
                 grp_id=grp_id,
+                operator_id=pb.body.uid,
                 suffix=pb.body.extra.suffix.strip() if pb.body.extra else "",
             )
         elif sub_typ == 12:  # mute

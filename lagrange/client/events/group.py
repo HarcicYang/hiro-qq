@@ -39,6 +39,7 @@ class GroupMessage(GroupEvent, MessageInfo):
 
 @dataclass
 class GroupRecall(GroupEvent, MessageInfo):
+    operator_id: str
     suffix: str
 
 
