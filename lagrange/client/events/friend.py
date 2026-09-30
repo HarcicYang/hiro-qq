@@ -20,7 +20,7 @@ class FriendEvent(BaseEvent):
 class FriendMessage(FriendEvent):
     seq: int  # c2cMsgSeq (content_head f11)
     client_seq: int  # 发送方 clientSequence (content_head f5)
-    msg_id: int
+    rand: int
     timestamp: int
     msg: str
     msg_chain: list[Element]
@@ -29,7 +29,7 @@ class FriendMessage(FriendEvent):
 @dataclass
 class FriendRecall(FriendEvent):
     seq: int
-    msg_id: int
+    rand: int
     timestamp: int
 
 

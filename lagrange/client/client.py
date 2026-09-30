@@ -503,7 +503,7 @@ class Client(BaseClient):
                 await self.send_uni_packet(
                     "trpc.msg.msg_svc.MsgService.SsoC2CRecallMsg",
                     RecallFriendMsgRequest.build(
-                        uid=uid, client_seq=msg.client_seq, c2c_seq=msg.seq, rand=msg.msg_id, timestamp=msg.timestamp
+                        uid=uid, client_seq=msg.client_seq, c2c_seq=msg.seq, rand=msg.rand, timestamp=msg.timestamp
                     ).encode(),
                 )
             ).data

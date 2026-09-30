@@ -437,7 +437,7 @@ async def parse_friend_msg(client: "Client", pkg: MsgPushBody) -> FriendMessage:
         to_uid=to_uid,
         seq=seq,
         client_seq=client_seq,
-        msg_id=msg_id,
+        rand=msg_id,
         timestamp=timestamp,
         msg=msg_text,
         msg_chain=list(parsed_msg),
