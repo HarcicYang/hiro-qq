@@ -2,6 +2,7 @@ import json
 
 from lagrange.info import AppInfo
 from typing import Literal
+from collections.abc import Callable, Awaitable
 import asyncio
 
 from .client.client import Client as Client
@@ -29,10 +30,12 @@ class Lagrange:
         custom_protocol_path: str = "./protocol.json",
         use_ipv6: bool = True,
         use_optimum: bool = False,
+        custom_sign_provider: Callable[[int, str, str], Callable[[str, int, bytes], Awaitable[dict | None]]] = None,
     ):
         self.im = InfoManager(uin, device_info_path, signinfo_path)
         self.uin = uin
         self._sign_url = sign_url
+        self._custom_sign_provider = custom_sign_provider
         self.sign = None
         self.events = {}
         self.log = log
@@ -63,13 +66,17 @@ class Lagrange:
         log.root.info(f"AppInfo: platform={app_info.os}, ver={app_info.build_version}({app_info.sub_app_id})")
 
         with self.im as im:
-            if self._sign_url:
+            if self._custom_sign_provider:
+                self.sign = self._custom_sign_provider
+            elif self._sign_url:
                 self.sign = sign_provider(
                     self._sign_url,
                     self.uin,
                     im.device.guid,
                     app_info.qua,
                 )
+            else:
+                log.root.warning("none of custom_sign_provider or sign_url provided, continue with no sign")
             self.client = Client(self.uin, app_info, im.device, im.sig_info, self.sign, self.use_ipv6, self.use_optimum)
             for event, handler in self.events.items():
                 self.client.events.subscribe(event, handler)
