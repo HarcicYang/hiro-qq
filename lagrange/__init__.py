@@ -30,7 +30,8 @@ class Lagrange:
         custom_protocol_path: str = "./protocol.json",
         use_ipv6: bool = True,
         use_optimum: bool = False,
-        custom_sign_provider: Callable[[int, str, str], Callable[[str, int, bytes], Awaitable[dict | None]]] = None,
+        custom_sign_provider: Callable[[int, str, str], Callable[[str, int, bytes], Awaitable[dict | None]]]
+        | None = None,
     ):
         self.im = InfoManager(uin, device_info_path, signinfo_path)
         self.uin = uin
