@@ -1,4 +1,11 @@
-from lagrange.utils.binary.protobuf import proto_field, ProtoStruct
+from lagrange.utils.binary.protobuf import proto_decode, proto_encode, proto_field, ProtoStruct
+
+
+def patch_pic_reserved(reserved: bytes | None, sub_type: int) -> bytes:
+    """Set PicExtBizInfo.PbReserve.subType while preserving unknown fields."""
+    fields = dict(proto_decode(reserved, 0).proto) if reserved else {}
+    fields[1] = sub_type
+    return proto_encode(fields)
 
 
 class CommonHead(ProtoStruct):

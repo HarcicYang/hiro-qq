@@ -279,11 +279,11 @@ class Client(BaseClient):
             raise AssertionError(result.ret_code, result.err_msg)
         return result.seq
 
-    async def upload_grp_image(self, image: BinaryIO, grp_id: int, is_emoji=False) -> Image:
-        return await self._highway.upload_image(image, gid=grp_id, biz_type=1 if is_emoji else 0)
+    async def upload_grp_image(self, image: BinaryIO, grp_id: int, is_emoji=False, summary: str | None = None) -> Image:
+        return await self._highway.upload_image(image, gid=grp_id, biz_type=1 if is_emoji else 0, summary=summary)
 
-    async def upload_friend_image(self, image: BinaryIO, uid: str, is_emoji=False) -> Image:
-        return await self._highway.upload_image(image, uid=uid, biz_type=1 if is_emoji else 0)
+    async def upload_friend_image(self, image: BinaryIO, uid: str, is_emoji=False, summary: str | None = None) -> Image:
+        return await self._highway.upload_image(image, uid=uid, biz_type=1 if is_emoji else 0, summary=summary)
 
     async def upload_grp_audio(self, voice: BinaryIO, grp_id: int) -> Audio:
         return await self._highway.upload_voice(voice, gid=grp_id)

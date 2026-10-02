@@ -47,7 +47,7 @@ class MediaInfo:
     url: str
     id: int = field(repr=False)
     md5: bytes = field(repr=False)
-    qmsg: bytes | None = field(repr=False)  # not online image
+    qmsg: bytes | None = field(repr=False)  # legacy not-online image
 
 
 @dataclass
@@ -147,6 +147,7 @@ class Image(CompatibleText, MediaInfo):
     display_name: str
     msg_info: MsgInfo | None = field(default=None, repr=False)
     bus_type: int | None = field(default=None, repr=False)
+    compat: bytes | None = field(default=None, repr=False)
 
     @property
     def raw_text(self) -> str:

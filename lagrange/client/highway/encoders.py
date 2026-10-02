@@ -8,6 +8,7 @@ from lagrange.pb.highway.comm import (
     FileInfo,
     FileType,
     PicExtInfo,
+    patch_pic_reserved,
     VideoExtInfo,
     IndexNode,
 )
@@ -77,9 +78,13 @@ def encode_upload_img_req(
     size: int,
     info: "ImageInfo",
     is_origin=True,
+    summary: str = "",
     biz_type: int = 0,  # 1 for custom face, 0 for regular image
 ) -> NTV2RichMediaReq:
     assert not (grp_id and uid)
+    biz_type = 1 if biz_type == 1 else 0
+    if not summary:
+        summary = "[动画表情]" if biz_type == 1 else "[图片]"
     fn = f"{md5.hex().upper()}.{info.name or 'jpg'}"
     c2c_info = None
     grp_info = None
@@ -93,6 +98,9 @@ def encode_upload_img_req(
         scene_type = 1
         c2c_info = C2CUserInfo(uid=uid)
         c2c_pb = bytes.fromhex("0800180020004200500062009201009a0100a2010c080012001800200028003a00")
+
+    c2c_pb = patch_pic_reserved(c2c_pb, biz_type)
+    grp_pb = patch_pic_reserved(grp_pb, biz_type)
 
     return NTV2RichMediaReq(
         req_head=MultiMediaReqHead(
@@ -126,6 +134,7 @@ def encode_upload_img_req(
             biz_info=ExtBizInfo(
                 pic=PicExtInfo(
                     biz_type=biz_type,
+                    summary=summary,
                     c2c_reserved=c2c_pb,
                     troop_reserved=grp_pb,
                 )

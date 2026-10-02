@@ -36,7 +36,7 @@ from lagrange.pb.message.rich_text.elems import (
     GeneralFlags,
 )
 from lagrange.pb.message.rich_text.elems import Text as PBText
-from lagrange.pb.highway.comm import PicExtInfo
+from lagrange.pb.highway.comm import PicExtInfo, patch_pic_reserved
 from lagrange.utils.binary.protobuf import proto_decode
 
 from .elems import (
@@ -120,11 +120,32 @@ async def build_message(
                 msg_pb.append(Elems(mini_app=MiniApp(template=b"\x01" + zlib.compress(msg.raw))))
             elif isinstance(msg, Image):
                 if msg.msg_info and msg.bus_type in (10, 20):
-                    # QQ upload response omits PicExtInfo.biz_type; stamp it explicitly
-                    # so receivers never see an absent field (None != 0 misjudged as emoji).
-                    if msg.msg_info.biz_info.pic is None:
-                        msg.msg_info.biz_info.pic = PicExtInfo()
-                    msg.msg_info.biz_info.pic.biz_type = 1 if msg.is_emoji else 0
+                    sub_type = 1 if msg.is_emoji else 0
+                    summary = msg.display_name or ("[动画表情]" if sub_type == 1 else "[图片]")
+                    pic = msg.msg_info.biz_info.pic
+                    if pic is None:
+                        pic = PicExtInfo()
+                        msg.msg_info.biz_info.pic = pic
+                    pic.biz_type = sub_type
+                    pic.summary = summary
+
+                    if msg.bus_type == 20:
+                        pic.troop_reserved = patch_pic_reserved(pic.troop_reserved, sub_type)
+                        if msg.compat:
+                            compat = CustomFace.decode(msg.compat)
+                            compat.biz_type = sub_type
+                            compat.args.is_emoji = msg.is_emoji
+                            compat.args.display_name = summary
+                            msg_pb.append(Elems(custom_face=compat))
+                    else:
+                        pic.c2c_reserved = patch_pic_reserved(pic.c2c_reserved, sub_type)
+                        if msg.compat:
+                            compat = NotOnlineImage.decode(msg.compat)
+                            compat.biz_type = sub_type
+                            compat.args.is_emoji = msg.is_emoji
+                            compat.args.display_name = summary
+                            msg_pb.append(Elems(not_online_image=compat))
+
                     msg_pb.append(
                         Elems(
                             common_elem=CommonElem(

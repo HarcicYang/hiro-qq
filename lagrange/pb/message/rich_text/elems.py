@@ -51,6 +51,7 @@ class NotOnlineImage(ProtoStruct):
     width: int = proto_field(9)
     res_id: str = proto_field(10)
     origin_path: str | None = proto_field(15, default=None)
+    biz_type: int = proto_field(16, default=0)
     args: ImageReserveArgs = proto_field(34, default_factory=ImageReserveArgs)
 
 
@@ -83,7 +84,7 @@ class CustomFace(ProtoStruct):
     thumb_url: str | None = proto_field(14, default=None)
     big_url: str | None = proto_field(15, default=None)
     original_url: str = proto_field(16)
-    # biz_type: int = proto_field(17)
+    biz_type: int = proto_field(17, default=0)
     image_type: int = proto_field(20, default=1000)
     width: int = proto_field(22)
     height: int = proto_field(23)

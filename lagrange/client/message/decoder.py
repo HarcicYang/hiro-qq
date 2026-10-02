@@ -137,6 +137,7 @@ async def parse_msg_new(
     el: list[Elems] = rich.content
     msg_chain: list[Element] = []
     ignore_next = False
+    skip_common_image = False
     for raw in el:
         if not raw or raw == Elems():
             continue
@@ -146,6 +147,10 @@ async def parse_msg_new(
         elif ignore_next:
             ignore_next = False
             continue
+        if skip_common_image:
+            skip_common_image = False
+            if raw.common_elem and raw.common_elem.service_type == 48 and raw.common_elem.bus_type in (10, 20):
+                continue
         if raw.text:  # msg
             msg = raw.text
             if msg.string and not msg.attr6_buf:  # Text
@@ -189,6 +194,7 @@ async def parse_msg_new(
             ignore_next = True
         elif raw.custom_face:  # gpic
             img = raw.custom_face
+            skip_common_image = True
             msg_chain.append(
                 elems.Image(
                     name=img.file_path,
@@ -199,12 +205,13 @@ async def parse_msg_new(
                     width=img.width,
                     height=img.height,
                     url="https://gchat.qpic.cn" + (img.original_url or ""),
-                    is_emoji=img.args.is_emoji,
+                    is_emoji=img.args.is_emoji or img.biz_type == 1,
                     qmsg=None,
                 )
             )
         elif raw.not_online_image:
             img = raw.not_online_image
+            skip_common_image = True
             msg_chain.append(
                 elems.Image(
                     name=img.file_path,
@@ -215,7 +222,7 @@ async def parse_msg_new(
                     width=img.width,
                     height=img.height,
                     url="https://gchat.qpic.cn" + (img.origin_path or ""),
-                    is_emoji=img.args.is_emoji,
+                    is_emoji=img.args.is_emoji or img.biz_type == 1,
                     qmsg=None,
                 )
             )

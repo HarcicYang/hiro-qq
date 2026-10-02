@@ -199,9 +199,12 @@ class HighWaySession:
 
                 bc += 1
 
-    async def upload_image(self, file: BinaryIO, gid=0, uid="", biz_type=0) -> Image:
+    async def upload_image(self, file: BinaryIO, gid=0, uid="", biz_type=0, summary: str | None = None) -> Image:
         if not self._session_addr_list:
             await self._get_bdh_session()
+        biz_type = 1 if biz_type == 1 else 0
+        if summary is None:
+            summary = "[动画表情]" if biz_type == 1 else "[图片]"
         fmd5, fsha1, fl = calc_file_hash_and_length(file)
         info = decoder_img.decode(file)
         self.logger.debug(f"image type: {info.pic_type.name}({info.width}*{info.height})")
@@ -211,7 +214,16 @@ class HighWaySession:
                 await self._client.send_oidb_svc(
                     0x11C4 if gid else 0x11C5,
                     100,
-                    encode_upload_img_req(gid, uid, fmd5, fsha1, fl, info, biz_type=biz_type).encode(),
+                    encode_upload_img_req(
+                        gid,
+                        uid,
+                        fmd5,
+                        fsha1,
+                        fl,
+                        info,
+                        summary=summary,
+                        biz_type=biz_type,
+                    ).encode(),
                     True,
                 )
             ).data
@@ -258,7 +270,7 @@ class HighWaySession:
 
         return Image(
             id=fileid,
-            display_name="[图片]" if info.pic_type.name != "gif" else "[动画表情]",
+            display_name=summary,
             name=f"{fmd5.hex()}.{info.pic_type.name}",
             size=fl,
             width=w,
@@ -267,6 +279,7 @@ class HighWaySession:
             url=url,
             is_emoji=biz_type == 1,
             qmsg=None if gid else ret.upload.compat_qmsg,
+            compat=ret.upload.compat_qmsg,
             msg_info=ret.upload.msg_info,
             bus_type=20 if gid else 10,
         )
