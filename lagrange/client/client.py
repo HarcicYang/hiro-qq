@@ -186,7 +186,7 @@ class Client(BaseClient):
         rsp = OidbResponse.decode(
             (
                 await self.send_uni_packet(
-                    f"OidbSvcTrpcTcp.0x{cmd:0>2X}_{sub_cmd}",
+                    f"OidbSvcTrpcTcp.0x{cmd:0>2x}_{sub_cmd}",
                     OidbRequest(cmd=cmd, sub_cmd=sub_cmd, data=bytes(buf), is_uid=is_uid).encode(),
                 )
             ).data
