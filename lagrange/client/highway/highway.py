@@ -104,6 +104,7 @@ class HighWaySession:
         ext=None,
         addrs: list[tuple[str, int]] | None = None,
         bs=65535,
+        data_app_id: int | None = None,
     ) -> bytes | None:
         if not addrs:
             addrs = self._session_addr_list
@@ -118,6 +119,7 @@ class HighWaySession:
                         ticket,
                         ext,
                         block_size=bs,
+                        data_app_id=data_app_id,
                     )
                 )
                 self.logger.info("upload complete, use %.2fms" % (sec * 1000))
@@ -141,6 +143,7 @@ class HighWaySession:
         ext: bytes | None = None,
         *,
         block_size=65535,
+        data_app_id: int | None = None,
     ) -> bytes | None:
         fmd5, _, fl = calc_file_hash_and_length(*files)
         ts = int(time.time() * 1000)
@@ -175,7 +178,7 @@ class HighWaySession:
                     ticket=ticket,
                     tgt=self._client._sig.tgt,
                     app_id=self._client.app_info.app_id,
-                    sub_app_id=self._client.app_info.sub_app_id,
+                    sub_app_id=data_app_id if data_app_id is not None else self._client.app_info.sub_app_id,
                     timestamp=ts,
                     ext_info=ext or b"",
                 ).encode()
@@ -198,6 +201,20 @@ class HighWaySession:
                             self._session_key = resp.seg_head.ticket
 
                 bc += 1
+
+    async def upload_avatar(self, image: BinaryIO):
+        if not self._session_addr_list:
+            await self._get_bdh_session()
+        if not self._session_sig:
+            raise ConnectionError("session sig not found, try again later")
+        await self.upload_controller(
+            image,
+            cmd_id=90,
+            ticket=self._session_sig,
+            ext=b"",
+            addrs=self._session_addr_list,
+            data_app_id=self._client.app_info.app_id,
+        )
 
     async def upload_image(self, file: BinaryIO, gid=0, uid="", biz_type=0, summary: str | None = None) -> Image:
         if not self._session_addr_list:

@@ -71,6 +71,7 @@ from lagrange.pb.service.group import (
     PBGetInfoFromUinReq,
 )
 from lagrange.pb.service.oidb import OidbRequest, OidbResponse
+from lagrange.pb.service.system import ModifySelfProfileReq
 from lagrange.pb.highway.comm import IndexNode
 from lagrange.utils.binary.protobuf import proto_decode, proto_encode
 from lagrange.utils.httpcat import HttpCat
@@ -674,6 +675,33 @@ class Client(BaseClient):
             return UserInfo.from_pb(rsp.body[0])
         else:
             return [UserInfo.from_pb(body) for body in rsp.body]
+
+    async def _modify_self_profile(
+        self,
+        *,
+        string_props: dict[int, bytes] | None = None,
+        number_props: dict[int, int] | None = None,
+    ):
+        rsp = await self.send_oidb_svc(
+            0x112A,
+            2,
+            ModifySelfProfileReq.build(
+                self.uin,
+                string_props=string_props,
+                number_props=number_props,
+            ).encode(),
+        )
+        if rsp.ret_code:
+            raise AssertionError(rsp.ret_code, rsp.err_msg)
+
+    async def set_avatar(self, image: BinaryIO):
+        await self._highway.upload_avatar(image)
+
+    async def set_nickname(self, nickname: str):
+        await self._modify_self_profile(string_props={20002: nickname.encode()})
+
+    async def set_bio(self, bio: str):
+        await self._modify_self_profile(string_props={102: bio.encode()})
 
     async def set_grp_bot_hd(self, grp_id: int, bot_id: int, data_1: str = "", data_2: str = ""):
         await self.send_oidb_svc(

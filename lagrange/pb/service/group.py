@@ -396,8 +396,8 @@ class _GetInfoCfg(ProtoStruct):
     cfg: bytes = proto_field(
         3,
         default=bytes.fromhex(
-            "08a29c0108a39c0108a49c0108a59c0108a69c0108a79c0108a99c"
-            "0108ab9c0108b49c0108b59c0108ba9c0108bf9c0108c59c011802"
+            "086608a29c0108a39c0108a49c0108a59c0108a69c0108a79c0108a99c"
+            "0108ab9c0108b49c0108b59c0108ba9c0108bf9c0108c59c010882d6011802"
         ),
     )
 

@@ -15,11 +15,13 @@ class Sex(IntEnum):
 @dataclass
 class UserInfo:
     name: str = ""
+    personal_sign: str = ""
     country: str = ""
     province: str = ""
     city: str = ""
     email: str = ""
     school: str = ""
+    qid: str = ""
     sex: Sex = Sex.notset
     age: int = 0
     birthday: datetime = datetime(1, 1, 1)
@@ -33,6 +35,8 @@ class UserInfo:
                 continue
             if str_field.type == 20002:
                 rsp.name = str_field.to_str
+            elif str_field.type == 102:
+                rsp.personal_sign = str_field.to_str
             elif str_field.type == 20003:
                 rsp.country = str_field.to_str
             elif str_field.type == 20004:
@@ -43,6 +47,8 @@ class UserInfo:
                 rsp.city = str_field.to_str
             elif str_field.type == 20021:
                 rsp.school = str_field.to_str
+            elif str_field.type == 27394:
+                rsp.qid = str_field.to_str
             elif str_field.type == 20031:
                 if str_field.value == b"\x00\x00\x00\x00":
                     continue
