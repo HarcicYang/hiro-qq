@@ -132,19 +132,41 @@ async def build_message(
                     if msg.bus_type == 20:
                         pic.troop_reserved = patch_pic_reserved(pic.troop_reserved, sub_type)
                         if msg.compat:
-                            compat = CustomFace.decode(msg.compat)
-                            compat.biz_type = sub_type
-                            compat.args.is_emoji = msg.is_emoji
-                            compat.args.display_name = summary
-                            msg_pb.append(Elems(custom_face=compat))
+                            try:
+                                compat = CustomFace.decode(msg.compat)
+                            except (
+                                AttributeError,
+                                AssertionError,
+                                IndexError,
+                                NotImplementedError,
+                                TypeError,
+                                ValueError,
+                            ):
+                                compat = None
+                            if compat is not None:
+                                compat.biz_type = sub_type
+                                compat.args.is_emoji = msg.is_emoji
+                                compat.args.display_name = summary
+                                msg_pb.append(Elems(custom_face=compat))
                     else:
                         pic.c2c_reserved = patch_pic_reserved(pic.c2c_reserved, sub_type)
                         if msg.compat:
-                            compat = NotOnlineImage.decode(msg.compat)
-                            compat.biz_type = sub_type
-                            compat.args.is_emoji = msg.is_emoji
-                            compat.args.display_name = summary
-                            msg_pb.append(Elems(not_online_image=compat))
+                            try:
+                                compat = NotOnlineImage.decode(msg.compat)
+                            except (
+                                AttributeError,
+                                AssertionError,
+                                IndexError,
+                                NotImplementedError,
+                                TypeError,
+                                ValueError,
+                            ):
+                                compat = None
+                            if compat is not None:
+                                compat.biz_type = sub_type
+                                compat.args.is_emoji = msg.is_emoji
+                                compat.args.display_name = summary
+                                msg_pb.append(Elems(not_online_image=compat))
 
                     msg_pb.append(
                         Elems(
