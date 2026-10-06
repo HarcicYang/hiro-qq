@@ -467,3 +467,36 @@ class GetGrpLastSeqRspBody(ProtoStruct):
 
 class GetGrpLastSeqRsp(ProtoStruct):
     body: GetGrpLastSeqRspBody = proto_field(1)
+
+
+class InviteGroupMember(ProtoStruct):
+    uid: str = proto_field(1)
+    source_group_uin: int | None = proto_field(2, default=None)
+
+
+class PBGroupInviteRequest(ProtoStruct):
+    grp_id: int = proto_field(1)
+    invitees: list[InviteGroupMember] = proto_field(2)
+    field3: str = proto_field(3, default="")
+    field4: int = proto_field(4, default=0)
+    field5: int = proto_field(5, default=0)
+    field6: str = proto_field(6, default="")
+    field7: int = proto_field(7, default=0)
+    field10: int = proto_field(10, default=0)
+
+    @classmethod
+    def build(cls, grp_id: int, uids: list[str] | dict[str, int]) -> "PBGroupInviteRequest":
+        if isinstance(uids, dict):
+            invitees = [
+                InviteGroupMember(uid=uid, source_group_uin=source)
+                for uid, source in uids.items()
+            ]
+        else:
+            invitees = [InviteGroupMember(uid=uid) for uid in uids]
+        assert invitees, "at least one invitee is required"
+        return cls(grp_id=grp_id, invitees=invitees)
+
+
+class PBGroupInviteResponse(ProtoStruct):
+    grp_id: int = proto_field(1)
+    seq: int = proto_field(2)

@@ -48,6 +48,8 @@ from lagrange.pb.service.group import (
     PBFetchGroupRequest,
     PBGetGrpMsgRequest,
     PBGroupMuteRequest,
+    PBGroupInviteRequest,
+    PBGroupInviteResponse,
     PBGroupRecallRequest,
     PBGroupRenameRequest,
     PBHandleGroupRequest,
@@ -540,6 +542,16 @@ class Client(BaseClient):
         )
         if rsp.ret_code:
             raise AssertionError(rsp.ret_code, str(rsp.err_msg))
+
+    async def invite_grp_member(self, grp_id: int, uids: list[str] | dict[str, int]) -> int:
+        rsp = await self.send_oidb_svc(
+            0x758,
+            1,
+            PBGroupInviteRequest.build(grp_id, uids).encode(),
+        )
+        if rsp.ret_code:
+            raise AssertionError(rsp.ret_code, str(rsp.err_msg))
+        return PBGroupInviteResponse.decode(rsp.data).seq
 
     async def send_grp_reaction(self, grp_id: int, msg_seq: int, content: str | int, is_cancel=False) -> None:
         if isinstance(content, str):
