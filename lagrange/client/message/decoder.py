@@ -86,6 +86,33 @@ def _file_info_from_index(index: IndexNode) -> FileInfo:
     return index.info
 
 
+def _is_legacy_image(raw: Elems | None) -> bool:
+    return bool(raw and (raw.custom_face or raw.not_online_image))
+
+
+def _is_nt_image(raw: Elems | None) -> bool:
+    return bool(
+        raw
+        and raw.common_elem
+        and raw.common_elem.service_type == 48
+        and raw.common_elem.bus_type in (10, 20)
+    )
+
+
+def _prefer_nt_images(content: list[Elems]) -> list[Elems]:
+    if not content:
+        return content
+    empty = Elems()
+    preferred: list[Elems] = []
+    for index, raw in enumerate(content):
+        if _is_legacy_image(raw):
+            following = next((item for item in content[index + 1 :] if item and item != empty), None)
+            if _is_nt_image(following):
+                continue
+        preferred.append(raw)
+    return preferred
+
+
 async def parse_msg_new(
     client: "Client", pkg: MsgPushBody, fri_id: str | None = None, grp_id: int | None = None
 ) -> Sequence[Element]:
@@ -134,7 +161,7 @@ async def parse_msg_new(
                 url=await client.fetch_audio_url(file_key, uid=fri_id or "", gid=grp_id or 0),
             )
         ]
-    el: list[Elems] = rich.content
+    el: list[Elems] = _prefer_nt_images(rich.content)
     msg_chain: list[Element] = []
     ignore_next = False
     skip_common_image = False
