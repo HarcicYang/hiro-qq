@@ -1,9 +1,35 @@
 import asyncio
+import time
 import traceback
 
 from .log import log
 
 _logger = log.fork("network")
+
+
+async def probe_server(host: str, port: int, timeout: float = 1) -> float | None:
+    start = time.monotonic()
+    try:
+        _, writer = await asyncio.wait_for(asyncio.open_connection(host, port), timeout)
+        latency = time.monotonic() - start
+        writer.close()
+        await writer.wait_closed()
+        return latency
+    except (OSError, asyncio.TimeoutError):
+        return None
+
+
+async def sort_servers_by_latency(
+    candidates: list[tuple[str, int]], timeout: float = 1
+) -> list[tuple[float, str, int]]:
+    latencies = await asyncio.gather(*(probe_server(host, port, timeout) for host, port in candidates))
+    sorted_servers = sorted(
+        ((latency, host, port) for (host, port), latency in zip(candidates, latencies) if latency is not None),
+        key=lambda server: server[0],
+    )
+    for latency, host, _ in sorted_servers:
+        _logger.debug(f"server: {host} latency: {latency * 1000:.0f}ms")
+    return sorted_servers
 
 
 class Connection:

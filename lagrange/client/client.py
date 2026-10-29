@@ -112,7 +112,7 @@ class Client(BaseClient):
 
         self._events = Events()
         self._push_deliver = PushDeliver(self)
-        self._highway = HighWaySession(self)
+        self._highway = HighWaySession(self, use_optimum)
         bind_services(self._push_deliver)
 
     @property

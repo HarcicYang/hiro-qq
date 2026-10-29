@@ -38,6 +38,7 @@ from lagrange.utils.crypto.tea import qqtea_encrypt
 from lagrange.utils.httpcat import HttpCat
 from lagrange.utils.image import decoder as decoder_img
 from lagrange.utils.log import log
+from lagrange.utils.network import sort_servers_by_latency
 
 from .constant import _DEFAULT_VIDEO_THUMBNAIL
 from .encoders import (
@@ -58,9 +59,10 @@ if TYPE_CHECKING:
 
 
 class HighWaySession:
-    def __init__(self, client: "Client"):
+    def __init__(self, client: "Client", use_optimum: bool = True):
         self.logger = log.fork("highway")
         self._client = client
+        self._use_optimum = use_optimum
         self._session_sig: bytes | None = None
         self._session_key: bytes | None = None
         self._session_addr_list: list[tuple[str, int]] = []
@@ -108,6 +110,12 @@ class HighWaySession:
     ) -> bytes | None:
         if not addrs:
             addrs = self._session_addr_list
+        if self._use_optimum and len(addrs) > 1:
+            servers = await sort_servers_by_latency(addrs)
+            if not servers:
+                raise ConnectionError("cannot upload, all server failure")
+            addrs = [(host, port) for _, host, port in servers]
+            self.logger.info(f"using optimum upload server {addrs[0][0]}:{addrs[0][1]}")
         for addr in addrs:
             try:
                 sec, data = await timeit(

@@ -6,7 +6,6 @@ import asyncio
 import ipaddress
 import sys
 import socket
-import time
 from typing import overload
 from collections.abc import Callable
 from collections.abc import Coroutine
@@ -14,7 +13,7 @@ from typing import Literal
 
 from lagrange.info import SigInfo
 from lagrange.utils.log import log
-from lagrange.utils.network import Connection
+from lagrange.utils.network import Connection, probe_server, sort_servers_by_latency
 
 from .wtlogin.sso import SSOPacket, parse_sso_frame, parse_sso_header
 
@@ -95,25 +94,10 @@ class ClientNetwork(Connection):
         return result
 
     async def _probe(self, ip: str, port: int) -> float | None:
-        start = time.monotonic()
-        try:
-            _, writer = await asyncio.wait_for(asyncio.open_connection(ip, port), 1)
-            latency = time.monotonic() - start
-            writer.close()
-            await writer.wait_closed()
-            return latency
-        except (OSError, asyncio.TimeoutError):
-            return None
+        return await probe_server(ip, port)
 
     async def _sort_servers(self, candidates: list[tuple[str, int]]) -> list[tuple[float, str, int]]:
-        latencies = await asyncio.gather(*(self._probe(ip, port) for ip, port in candidates))
-        sorted_ = sorted(
-            ((lat, ip, port) for (ip, port), lat in zip(candidates, latencies) if lat is not None),
-            key=lambda x: x[0],
-        )
-        for lat, ip, _ in sorted_:
-            log.network.debug(f"server: {ip} latency: {lat * 1000:.0f}ms")
-        return sorted_
+        return await sort_servers_by_latency(candidates)
 
     async def connect(self) -> None:
         if self._optimum:
