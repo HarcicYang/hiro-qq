@@ -69,15 +69,23 @@ class ClientNetwork(Connection):
     async def _resolve_candidates(self) -> list[tuple[str, int]]:
         family = socket.AF_INET6 if self._using_v6 else socket.AF_INET
         loop = asyncio.get_running_loop()
-        try:
-            infos = await loop.getaddrinfo(
-                *self._upstream,
-                family=family,
-                type=socket.SOCK_STREAM,
-            )
-        except socket.gaierror as e:
-            log.network.error(f"DNS resolve failed: {e}")
-            return []
+        while True:
+            try:
+                infos = await loop.getaddrinfo(
+                    *self._upstream,
+                    family=family,
+                    type=socket.SOCK_STREAM,
+                )
+                break
+            except socket.gaierror as e:
+                log.network.error(f"DNS resolve failed: {e}{', retrying via ipv4' if self._using_v6 else ''}")
+                if family is socket.AF_INET6:
+                    family = socket.AF_INET
+                    continue
+                return []
+            except Exception as e:
+                log.network.error(f"unknown dns resolve exception: {repr(e)}")
+                return []
         seen, result = set(), []
         for info in infos:
             ip, port = info[4][0], info[4][1]

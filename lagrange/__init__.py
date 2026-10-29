@@ -69,8 +69,8 @@ class Lagrange:
         with self.im as im:
             if self._custom_sign_provider:
                 self.sign = self._custom_sign_provider(
-                    self._sign_url,
-                    self.uin,
+                    self._sign_url,  # type: ignore
+                    self.uin,  # type: ignore
                     im.device.guid,
                     app_info.qua,
                 )
