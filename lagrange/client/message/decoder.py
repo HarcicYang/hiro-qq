@@ -91,12 +91,7 @@ def _is_legacy_image(raw: Elems | None) -> bool:
 
 
 def _is_nt_image(raw: Elems | None) -> bool:
-    return bool(
-        raw
-        and raw.common_elem
-        and raw.common_elem.service_type == 48
-        and raw.common_elem.bus_type in (10, 20)
-    )
+    return bool(raw and raw.common_elem and raw.common_elem.service_type == 48 and raw.common_elem.bus_type in (10, 20))
 
 
 def _prefer_nt_images(content: list[Elems]) -> list[Elems]:

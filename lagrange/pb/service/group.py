@@ -487,10 +487,7 @@ class PBGroupInviteRequest(ProtoStruct):
     @classmethod
     def build(cls, grp_id: int, uids: list[str] | dict[str, int]) -> "PBGroupInviteRequest":
         if isinstance(uids, dict):
-            invitees = [
-                InviteGroupMember(uid=uid, source_group_uin=source)
-                for uid, source in uids.items()
-            ]
+            invitees = [InviteGroupMember(uid=uid, source_group_uin=source) for uid, source in uids.items()]
         else:
             invitees = [InviteGroupMember(uid=uid) for uid in uids]
         assert invitees, "at least one invitee is required"
