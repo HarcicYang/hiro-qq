@@ -105,11 +105,19 @@ class SrcMsgArgs(ProtoStruct):
     uid: str | None = proto_field(6, default=None)
 
 
+class SrcElemArg(ProtoStruct):
+    text: bytes = proto_field(1, default=b"")
+
+
+class SrcElem(ProtoStruct):
+    arg: SrcElemArg | None = proto_field(1, default=None)
+
+
 class SrcMsg(ProtoStruct):
     seq: int = proto_field(1)
     uin: int = proto_field(2, default=0)
     timestamp: int = proto_field(3)
-    elems: list[dict] = proto_field(5, default_factory=lambda: [{}])
+    elems: list[SrcElem] = proto_field(5, default_factory=list)
     pb_reserved: SrcMsgArgs | None = proto_field(8, default=None)
     to_uin: int = proto_field(10, default=0)
 

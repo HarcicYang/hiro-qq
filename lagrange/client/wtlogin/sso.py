@@ -23,6 +23,16 @@ def parse_lv(buffer: BytesIO):  # u32 len only
     return buffer.read(length - 4)
 
 
+def _decrypt_required(data: bytes, key: bytes, context: str) -> bytes:
+    try:
+        decrypted = qqtea_decrypt(data, key)
+    except (ValueError, struct.error) as exc:
+        raise ValueError(f"Failed to decrypt {context}") from exc
+    if decrypted is None:
+        raise ValueError(f"Failed to decrypt {context}")
+    return decrypted
+
+
 def parse_sso_header(raw: bytes, d2_key: bytes) -> tuple[int, str, bytes]:
     buf = BytesIO(raw)
     # parse sso header
@@ -33,9 +43,9 @@ def parse_sso_header(raw: bytes, d2_key: bytes) -> tuple[int, str, bytes]:
     if flag == 0:  # no encrypted
         dec = buf.read()
     elif flag == 1:  # enc with d2key
-        dec = qqtea_decrypt(buf.read(), d2_key)
+        dec = _decrypt_required(buf.read(), d2_key, "SSO body with d2 key")
     elif flag == 2:  # enc with \x00*16
-        dec = qqtea_decrypt(buf.read(), bytes(16))
+        dec = _decrypt_required(buf.read(), bytes(16), "SSO body with zero key")
     else:
         raise TypeError(f"invalid encrypt flag: {flag}")
     return flag, uin, dec
@@ -86,6 +96,6 @@ def parse_oicq_body(buffer: bytes) -> bytes:
 
     body = buffer[16:-1]
     if enc_type == 0:
-        return qqtea_decrypt(body, ecdh["secp192k1"].share_key)
+        return _decrypt_required(body, ecdh["secp192k1"].share_key, "OICQ body")
     else:
         raise ValueError(f"Unknown encrypt type: {enc_type}")

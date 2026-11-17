@@ -1,5 +1,6 @@
 import hashlib
 import os
+import struct
 
 from lagrange.client.packet import PacketBuilder
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
@@ -133,7 +134,13 @@ def decode_login_response(buf: bytes, sig: SigInfo):
     tlv = reader.read_tlv()
 
     if typ == 0:
-        reader = Reader(qqtea_decrypt(tlv[0x119], sig.tgtgt))
+        try:
+            decrypted = qqtea_decrypt(tlv[0x119], sig.tgtgt)
+        except (ValueError, struct.error) as exc:
+            raise ValueError("Failed to decrypt login response") from exc
+        if decrypted is None:
+            raise ValueError("Failed to decrypt login response")
+        reader = Reader(decrypted)
         tlv = reader.read_tlv()
         sig.tgt = tlv.get(0x10A) or sig.tgt
         sig.d2 = tlv.get(0x143) or sig.d2

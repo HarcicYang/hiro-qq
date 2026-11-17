@@ -27,6 +27,8 @@ from lagrange.pb.message.rich_text.elems import (
     OpenData,
     Ptt,
     RichMsg,
+    SrcElem,
+    SrcElemArg,
     SrcMsg,
     CommonElem,
     MarketFace as PBMarketFace,
@@ -98,7 +100,7 @@ async def build_message(
                             seq=msg.seq,
                             uin=msg.uin,
                             timestamp=msg.timestamp,
-                            elems=[{1: {1: msg.msg}}],
+                            elems=[SrcElem(arg=SrcElemArg(text=msg.msg.encode()))],
                             pb_reserved=SrcMsgArgs(uid=msg.uid) if msg.uid else None,
                         )
                     )

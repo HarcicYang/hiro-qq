@@ -382,11 +382,8 @@ async def parse_msg_new(
             msg_text = ""
 
             for v in src.elems:
-                elem = v.get(1, {1: b""})[1]
-                if isinstance(elem, dict):
-                    msg_text += proto_encode(elem).decode()
-                else:
-                    msg_text += elem.decode()
+                if v.arg is not None:
+                    msg_text += v.arg.text.decode(errors="replace")
             # src[10]: optional[grp_id]
             msg_chain.append(
                 elems.Quote(
