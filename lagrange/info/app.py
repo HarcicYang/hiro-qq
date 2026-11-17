@@ -46,6 +46,7 @@ class AppInfo(JsonSerializer):
     sub_sigmap: int
     nt_login_type: int
     qua: str = ""
+    apk_signature_md5: bytes = b""
 
     @property
     def build_version(self) -> int:

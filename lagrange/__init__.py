@@ -91,6 +91,7 @@ class Lagrange:
                         im.device.guid,
                         app_info.qua,
                         app_info.pt_version,
+                        app_info.wtlogin_sdk,
                     )
                 else:
                     self.sign = sign_provider(

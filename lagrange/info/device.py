@@ -11,6 +11,8 @@ class DeviceInfo(JsonSerializer):
     device_name: str
     system_kernel: str
     kernel_version: str
+    android_id: str = ""
+    qimei: str = ""
 
     @classmethod
     def generate(cls, uin: str | int) -> "DeviceInfo":
@@ -22,4 +24,6 @@ class DeviceInfo(JsonSerializer):
             device_name=f"Lagrange-{md5(uin.encode()).digest()[:4].hex().upper()}",
             system_kernel=f"{platform.system()} {platform.version()}",
             kernel_version=platform.version(),
+            android_id=md5(uin.encode()).hexdigest()[:16],
+            qimei="QIMEI" + md5(f"{uin}-qimei".encode()).hexdigest(),
         )

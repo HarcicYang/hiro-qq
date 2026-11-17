@@ -172,35 +172,92 @@ def sign_provider(upstream_url: str, uin: int, guid: str, qua: str):
     return get_sign
 
 
-def sign_provider_android(upstream_url: str, uin: int, guid: str, qua: str, version: str):
-    purl = parse.urlparse(upstream_url)
-    token = purl.username or None
-    netloc = (purl.hostname or "") + (f":{purl.port}" if purl.port else "")
-    url = parse.urlunparse(purl._replace(netloc=netloc))
+class AndroidSignProvider:
+    def __init__(self, upstream_url: str, uin: int, guid: str, qua: str, version: str, sdk_version: str = ""):
+        purl = parse.urlparse(upstream_url)
+        self._token = purl.username or None
+        netloc = (purl.hostname or "") + (f":{purl.port}" if purl.port else "")
+        self._url = parse.urlunparse(purl._replace(netloc=netloc))
+        self._uin = uin
+        self._guid = guid
+        self._qua = qua
+        self._version = version
+        self._sdk_version = sdk_version
 
-    async def get_sign(cmd: str, seq: int, buf: bytes) -> dict:
+    def _headers(self) -> dict:
+        headers = {"Content-Type": "application/json"}
+        if self._token:
+            headers["Authorization"] = f"Bearer {self._token}"
+        return headers
+
+    async def _request(self, endpoint: str, params: dict) -> dict:
+        ret = await HttpCat.request(
+            "POST", f"{self._url}/{endpoint}", body=json.dumps(params).encode("utf-8"), header=self._headers()
+        )
+        if ret.code != 200:
+            raise ConnectionError(ret.code, ret.body)
+        data = ret.json()
+        if data.get("code", 0) != 0:
+            raise ConnectionError(f"({data.get('code')}) {data.get('msg') or data.get('message')}")
+        return data
+
+    async def get_energy(self, data: str) -> bytes:
+        try:
+            rsp = await self._request(
+                "energy",
+                {
+                    "uin": self._uin,
+                    "data": data,
+                    "guid": self._guid.upper(),
+                    "ver": self._sdk_version,
+                    "version": self._version,
+                    "qua": self._qua,
+                },
+            )
+            value = rsp.get("value") or rsp.get("data")
+            return bytes.fromhex(value) if value else b""
+        except Exception:
+            _logger.exception("get energy failed")
+            return b""
+
+    async def get_debug_xwid(self, data: str) -> bytes:
+        try:
+            rsp = await self._request(
+                "get_tlv553",
+                {
+                    "uin": self._uin,
+                    "data": data,
+                    "guid": self._guid.upper(),
+                    "version": self._version,
+                    "qua": self._qua,
+                },
+            )
+            value = rsp.get("value") or rsp.get("data")
+            return bytes.fromhex(value) if value else b""
+        except Exception:
+            _logger.exception("get tlv553 failed")
+            return b""
+
+    async def __call__(self, cmd: str, seq: int, buf: bytes) -> dict:
         if cmd not in SIGN_PKG_LIST:
             return {}
 
         params = {
-            "uin": uin,
+            "uin": self._uin,
             "cmd": cmd,
             "seq": seq,
             "buffer": buf.hex().lower(),
-            "guid": guid.lower(),
-            "version": version,
-            "qua": qua,
+            "guid": self._guid.lower(),
+            "version": self._version,
+            "qua": self._qua,
         }
         body = json.dumps(params).encode("utf-8")
-        headers = {"Content-Type": "application/json"}
-        if token:
-            headers["Authorization"] = f"Bearer {token}"
 
         max_retries = 3
         for attempt in range(max_retries):
             try:
                 start_time = time.time()
-                ret = await HttpCat.request("POST", url, body=body, header=headers)
+                ret = await HttpCat.request("POST", self._url, body=body, header=self._headers())
                 if ret.code != 200:
                     raise ConnectionError(ret.code, ret.body)
 
@@ -233,7 +290,9 @@ def sign_provider_android(upstream_url: str, uin: int, guid: str, qua: str, vers
             "extra": value["extra"],
         }
 
-    return get_sign
+
+def sign_provider_android(upstream_url: str, uin: int, guid: str, qua: str, version: str, sdk_version: str = ""):
+    return AndroidSignProvider(upstream_url, uin, guid, qua, version, sdk_version)
 
 
 async def fetch_appinfo(upstream_url: str):
