@@ -541,7 +541,7 @@ class HighWaySession:
         file.seek(0)
 
         req = E37UploadReq.build(self._client.uid, uid, fl, file_name, md5_10m, fsha1, fmd5)
-        rsp = E37UploadRsp.decode((await self._client.send_oidb_svc(0xE37, 1700, req.encode(), False)).data)
+        rsp = E37UploadRsp.decode((await self._client.send_oidb_svc(0xE37, 1700, req.encode(), True)).data)
         upload = rsp.upload
         if upload.ret_code:
             raise ConnectionError(upload.ret_code, upload.ret_msg)
@@ -681,7 +681,7 @@ class HighWaySession:
 
     async def send_group_file(self, grp_id: int, file_id: str):
         req = D9SendFileReq.build(grp_id, file_id)
-        rsp = await self._client.send_oidb_svc(0x6D9, 4, req.encode(), False)
+        rsp = await self._client.send_oidb_svc(0x6D9, 4, req.encode(), True)
         if rsp.ret_code:
             raise AssertionError(rsp.ret_code, rsp.err_msg)
 

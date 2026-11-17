@@ -205,12 +205,16 @@ class BaseClient:
     async def send_uni_packet(self, cmd: str, buf: bytes, *, timeout=10) -> SSOPacket: ...
 
     @overload
-    async def send_uni_packet(self, cmd: str, buf: bytes, send_only: Literal[False], timeout=10) -> SSOPacket: ...
+    async def send_uni_packet(
+        self, cmd: str, buf: bytes, send_only: Literal[False], timeout=10, *, msg_type: int | None = None
+    ) -> SSOPacket: ...
 
     @overload
-    async def send_uni_packet(self, cmd: str, buf: bytes, send_only: Literal[True], timeout=10) -> None: ...
+    async def send_uni_packet(
+        self, cmd: str, buf: bytes, send_only: Literal[True], timeout=10, *, msg_type: int | None = None
+    ) -> None: ...
 
-    async def send_uni_packet(self, cmd, buf, send_only: bool = False, timeout=10):
+    async def send_uni_packet(self, cmd, buf, send_only: bool = False, timeout=10, msg_type: int | None = None):
         seq = self.get_seq()
         sign = None
         if self._sign_provider:
@@ -224,6 +228,7 @@ class BaseClient:
             device_info=self.device_info,
             sig_info=self._sig,
             body=buf,
+            msg_type=msg_type,
         )
         if send_only:
             return await self._network.send(packet, wait_seq=-1, timeout=timeout)

@@ -185,12 +185,15 @@ class Client(BaseClient):
                     return await self.register()
         return False
 
-    async def send_oidb_svc(self, cmd: int, sub_cmd: int, buf: bytes, is_uid=False) -> OidbResponse:
+    async def send_oidb_svc(
+        self, cmd: int, sub_cmd: int, buf: bytes, is_uid=False, msg_type: int | None = None
+    ) -> OidbResponse:
         rsp = OidbResponse.decode(
             (
                 await self.send_uni_packet(
                     f"OidbSvcTrpcTcp.0x{cmd:0>2x}_{sub_cmd}",
                     OidbRequest(cmd=cmd, sub_cmd=sub_cmd, data=bytes(buf), is_uid=is_uid).encode(),
+                    msg_type=msg_type,
                 )
             ).data
         )
@@ -679,7 +682,7 @@ class Client(BaseClient):
             raise TypeError(userid[0])
 
         rsp = GetInfoFromUidRsp.decode(
-            (await self.send_oidb_svc(0xFE1, sc, req, is_uid=True if sc == 2 else False)).data
+            (await self.send_oidb_svc(0xFE1, sc, req, is_uid=True if sc == 2 else False, msg_type=0 if sc == 2 else None)).data
         )
         if not rsp.body:
             raise AssertionError("Empty response")

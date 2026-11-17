@@ -58,6 +58,9 @@ SIGN_PKG_LIST = [
     "OidbSvcTrpcTcp.0xf67_1",
     "OidbSvcTrpcTcp.0xf67_5",
     "OidbSvcTrpcTcp.0x6d9_4",
+    "OidbSvcTrpcTcp.0xfe1_2",
+    "OidbSvcTrpcTcp.0xfe1_8",
+    "OidbSvcTrpcTcp.0xe37_1700",
     "trpc.login.ecdh.EcdhService.SsoQRLoginGenQr",
     "ConnAuthSvr.fast_qq_login",
     "ConnAuthSvr.sdk_auth_api",
@@ -167,3 +170,119 @@ def sign_provider(upstream_url: str, uin: int, guid: str, qua: str):
         }
 
     return get_sign
+
+
+def sign_provider_android(upstream_url: str, uin: int, guid: str, qua: str, version: str):
+    purl = parse.urlparse(upstream_url)
+    token = purl.username or None
+    netloc = (purl.hostname or "") + (f":{purl.port}" if purl.port else "")
+    url = parse.urlunparse(purl._replace(netloc=netloc))
+
+    async def get_sign(cmd: str, seq: int, buf: bytes) -> dict:
+        if cmd not in SIGN_PKG_LIST:
+            return {}
+
+        params = {
+            "uin": uin,
+            "cmd": cmd,
+            "seq": seq,
+            "buffer": buf.hex().lower(),
+            "guid": guid.lower(),
+            "version": version,
+            "qua": qua,
+        }
+        body = json.dumps(params).encode("utf-8")
+        headers = {"Content-Type": "application/json"}
+        if token:
+            headers["Authorization"] = f"Bearer {token}"
+
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                start_time = time.time()
+                ret = await HttpCat.request("POST", url, body=body, header=headers)
+                if ret.code != 200:
+                    raise ConnectionError(ret.code, ret.body)
+
+                data = ret.json()
+                code = data.get("code", 0)
+                if code != 0:
+                    _logger.error(f"Sign server returned error: ({code}) {data.get('msg')}")
+                    if attempt < max_retries - 1:
+                        backoff = 2**attempt
+                        _logger.warning(f"重试签名请求 ({attempt + 1}/{max_retries})，{backoff}s 后重试...")
+                        await asyncio.sleep(backoff)
+                        continue
+                    return {}
+
+                _logger.debug(f"signed for [{cmd}:{seq}]({(time.time() - start_time) * 1000:.2f}ms)")
+                break
+            except Exception:
+                if attempt < max_retries - 1:
+                    backoff = 2**attempt
+                    _logger.exception(f"签名请求失败 ({attempt + 1}/{max_retries})，{backoff}s 后重试:")
+                    await asyncio.sleep(backoff)
+                else:
+                    _logger.exception("Unexpected error on sign request:")
+                    raise ConnectionError("Max retries exceeded")
+
+        value = data["data"]
+        return {
+            "sign": value["sign"],
+            "token": value["token"],
+            "extra": value["extra"],
+        }
+
+    return get_sign
+
+
+async def fetch_appinfo(upstream_url: str):
+    from ..info.app import AppInfo
+
+    purl = parse.urlparse(upstream_url)
+    token = purl.username or None
+    netloc = (purl.hostname or "") + (f":{purl.port}" if purl.port else "")
+    url = parse.urlunparse(purl._replace(netloc=netloc)) + "/appinfo_v2"
+
+    headers = {}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    try:
+        ret = await HttpCat.request("GET", url, header=headers)
+        if ret.code != 200:
+            _logger.warning(f"fetch appinfo failed: http {ret.code}")
+            return None
+
+        data = ret.json()
+        if data.get("code", 0) != 0:
+            _logger.warning(f"fetch appinfo failed: ({data.get('code')}) {data.get('msg') or data.get('message')}")
+            return None
+
+        value = data.get("data") or data.get("value")
+        if not value:
+            return None
+
+        sdk = value.get("sdk_info") or {}
+        return AppInfo(
+            os=value["os"],
+            kernel=value["kernel"],
+            vendor_os=value["vendor_os"],
+            current_version=value["current_version"],
+            misc_bitmap=sdk.get("misc_bit_map", 0),
+            pt_version=value["pt_version"],
+            pt_os_version=value.get("sso_version", 5),
+            package_name=value["package_name"],
+            wtlogin_sdk=sdk.get("sdk_version", ""),
+            app_id=value["app_id"],
+            sub_app_id=value["sub_app_id"],
+            app_id_qrcode=value.get("app_id_qrcode") or value["app_id"],
+            app_client_version=value.get("app_client_version", 0),
+            main_sigmap=sdk.get("main_sig_map", 0),
+            sub_sigmap=sdk.get("sub_sig_map", 0),
+            nt_login_type=value.get("nt_login_type", 1),
+            qua=value.get("qua", ""),
+        )
+    except Exception:
+        _logger.exception("fetch appinfo failed")
+        return None

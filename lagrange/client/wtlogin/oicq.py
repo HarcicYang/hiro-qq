@@ -84,10 +84,14 @@ def build_uni_packet(
     device_info: DeviceInfo,
     sig_info: SigInfo,
     body: bytes,
+    msg_type: int | None = None,
 ) -> bytes:
     trace = f"00-{os.urandom(16).hex()}-{os.urandom(8).hex()}-01"
 
     head: dict = {15: trace, 16: sig_info.uid}
+    if app_info.os.casefold() == "android":
+        head[21] = 0 if msg_type == 0 else 32
+        head[26] = 100
     if sign:
         head[24] = {
             1: bytes.fromhex(sign["sign"]),
