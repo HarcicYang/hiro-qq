@@ -1,6 +1,6 @@
 import struct
 
-__all__ = ["qqtea_encrypt", "qqtea_decrypt"]
+__all__ = ["qqtea_decrypt", "qqtea_encrypt"]
 
 
 def _xor(a, b):
@@ -17,12 +17,14 @@ def _tea_code(v, k) -> bytes:  # 传入8字节数据 16字节key
     k = struct.unpack(b">LLLL", k[0:16])
     v0, v1 = struct.unpack(b">LL", v[0:8])
     sum_ = 0
-    for i in range(n):
+    i = 0
+    while i < n:  # make nuitka happy, same below
         sum_ += delta
         v0 += (op & (v1 << 4)) + k[0] ^ v1 + sum_ ^ (op & (v1 >> 5)) + k[1]
         v0 &= op
         v1 += (op & (v0 << 4)) + k[2] ^ v0 + sum_ ^ (op & (v0 >> 5)) + k[3]
         v1 &= op
+        i += 1
     r = struct.pack(b">LL", v0, v1)
     return r
 
@@ -34,20 +36,22 @@ def _tea_decipher(v: bytes, k: bytes) -> bytes:
     k0, k1, k2, k3 = struct.unpack(b">LLLL", k[0:16])
     delta = 0x9E3779B9
     sum_ = (delta << 4) & op  # 左移4位 就是x16
-    for i in range(n):
+    i = 0
+    while i < n:
         v1 -= ((v0 << 4) + k2) ^ (v0 + sum_) ^ ((v0 >> 5) + k3)
         v1 &= op
         v0 -= ((v1 << 4) + k0) ^ (v1 + sum_) ^ ((v1 >> 5) + k1)
         v0 &= op
         sum_ -= delta
         sum_ &= op
+        i += 1
     return struct.pack(b">LL", v0, v1)
 
 
 class _TEA:
     """
     QQ TEA 加解密, 64比特明码, 128比特密钥
-    这是一个确认线程安全的独立加密模块，使用时必须要有一个全局变量secret_key，要求大于等于16位
+    这是一个确认线程安全的独立加密模块,使用时必须要有一个全局变量secret_key,要求大于等于16位
     """
 
     def __init__(self, secret_key: bytes):
@@ -58,7 +62,7 @@ class _TEA:
         data_len = len(data)
         filln = (8 - (data_len + 2)) % 8 + 2
         fills = bytearray()
-        for i in range(filln):
+        for _ in range(filln):
             fills.append(220)
         return bytes([(filln - 2) | 0xF8]) + fills + data + b"\x00" * 7
 
@@ -67,11 +71,13 @@ class _TEA:
         tr = b"\0" * 8
         to = b"\0" * 8
         result = bytearray()
-        for i in range(0, len(data), 8):
+        i = 0
+        while i < len(data):
             o = _xor(data[i : i + 8], tr)
             tr = _xor(_tea_code(o, self.secret_key), to)
             to = o
             result += tr
+            i += 8
         return bytes(result)
 
     def decrypt(self, text: bytes) -> bytes | None:  # v不可变
@@ -80,11 +86,13 @@ class _TEA:
         pos = (plain[0] & 0x07) + 2
         ret = plain
         precrypt = text[0:8]
-        for i in range(8, data_len, 8):
+        i = 8
+        while i < data_len:
             x = _xor(_tea_decipher(_xor(text[i : i + 8], plain), self.secret_key), precrypt)  # 跳过了前8个字节
             plain = _xor(x, precrypt)
             precrypt = text[i : i + 8]
             ret += x
+            i += 8
         if ret[-7:] != b"\0" * 7:
             return None
         return ret[pos + 1 : -7]
@@ -94,20 +102,17 @@ def qqtea_encrypt(data: bytes, key: bytes) -> bytes:
     return _TEA(key).encrypt(data)
 
 
-def qqtea_decrypt(data: bytes, key: bytes) -> bytes:
-    result = _TEA(key).decrypt(data)
-    if result is None:
-        raise ValueError("Invalid QQ TEA ciphertext")
-    return result
+def qqtea_decrypt(data: bytes, key: bytes) -> bytes | None:
+    return _TEA(key).decrypt(data)
 
 
 try:
-    from ftea import TEA as FTEA
+    from ftea import TEA as FTEA  # type: ignore[missing-import]
 
     def qqtea_encrypt(data: bytes, key: bytes) -> bytes:
         return FTEA(key).encrypt_qq(data)
 
-    def qqtea_decrypt(data: bytes, key: bytes) -> bytes:
+    def qqtea_decrypt(data: bytes, key: bytes) -> bytes | None:
         return FTEA(key).decrypt_qq(data)
 
 except ImportError:
