@@ -122,6 +122,21 @@ class BaseClient:
                 # wakeup loop if it is blocked by select() with long timeout
                 task._loop.call_soon_threadsafe(lambda: None)
 
+    async def _heartbeat_once(self) -> float:
+        task = asyncio.create_task(self.sso_heartbeat(True, 5))
+        try:
+            done, _ = await asyncio.wait((task,), timeout=10)
+        except asyncio.CancelledError:
+            task.cancel()
+            raise
+        if not done:
+            task.cancel()
+            raise TimeoutError("heartbeat timeout")
+        try:
+            return task.result()
+        except asyncio.CancelledError as exc:
+            raise ConnectionError("heartbeat cancelled") from exc
+
     async def _heartbeat_task(self):
         err_count = 0
         while True:
@@ -129,15 +144,19 @@ class BaseClient:
             if not err_count:
                 await asyncio.sleep(self._heartbeat_interval)
             try:
-                log.network.info(f"{await self.sso_heartbeat(True, 5) * 1000:.2f}ms to server")
-            except asyncio.TimeoutError:
+                log.network.info(f"{await self._heartbeat_once() * 1000:.2f}ms to server")
+            except asyncio.CancelledError:
+                raise
+            except Exception as exc:
+                err_count += 1
                 if err_count < 3:
-                    log.network.warning("heartbeat timeout")
-                    err_count += 1
+                    log.network.warning(f"heartbeat failed ({err_count}/3): {exc!r}")
                     continue
-                else:
-                    log.network.error("too many heartbeats fail, reconnecting...")
-                    self.destroy_network()
+                log.network.error(f"heartbeat failed {err_count} times, reconnecting: {exc!r}")
+                self.destroy_network()
+                err_count = 0
+                await asyncio.sleep(10)
+                continue
             err_count = 0
 
     async def _push_handle_loop(self):
