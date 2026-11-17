@@ -5,7 +5,7 @@ class OidbRequest(ProtoStruct):
     cmd: int = proto_field(1)
     sub_cmd: int = proto_field(2)
     data: bytes = proto_field(4)
-    is_uid: bool = proto_field(12, default=False)
+    reserved: int = proto_field(12, default=0)
 
 
 class OidbResponse(OidbRequest):

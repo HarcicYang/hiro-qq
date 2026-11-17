@@ -186,13 +186,13 @@ class Client(BaseClient):
         return False
 
     async def send_oidb_svc(
-        self, cmd: int, sub_cmd: int, buf: bytes, is_uid=False, msg_type: int | None = None
+        self, cmd: int, sub_cmd: int, buf: bytes, reserved: int = 0, msg_type: int | None = None
     ) -> OidbResponse:
         rsp = OidbResponse.decode(
             (
                 await self.send_uni_packet(
                     f"OidbSvcTrpcTcp.0x{cmd:0>2x}_{sub_cmd}",
-                    OidbRequest(cmd=cmd, sub_cmd=sub_cmd, data=bytes(buf), is_uid=is_uid).encode(),
+                    OidbRequest(cmd=cmd, sub_cmd=sub_cmd, data=bytes(buf), reserved=reserved).encode(),
                     msg_type=msg_type,
                 )
             ).data
@@ -541,7 +541,7 @@ class Client(BaseClient):
             0x8A0,
             0,
             PBGroupKickMemberRequest.build(grp_id, uin, permanent).encode(),
-            True,
+            reserved=1,
         )
         if rsp.ret_code:
             raise AssertionError(rsp.ret_code, str(rsp.err_msg))
@@ -682,7 +682,7 @@ class Client(BaseClient):
             raise TypeError(userid[0])
 
         rsp = GetInfoFromUidRsp.decode(
-            (await self.send_oidb_svc(0xFE1, sc, req, is_uid=True if sc == 2 else False, msg_type=0 if sc == 2 else None)).data
+            (await self.send_oidb_svc(0xFE1, sc, req, reserved=1 if sc == 2 else 0, msg_type=0 if sc == 2 else None)).data
         )
         if not rsp.body:
             raise AssertionError("Empty response")
@@ -797,7 +797,7 @@ class Client(BaseClient):
             1: {1: {1: 1, 2: 202}, 2: {101: 2, 102: 1, 200: 0}, 3: {1: 2}},
             4: {1: [10, 20, 2]},
         }
-        rsp = await self.send_oidb_svc(0x9067, 202, proto_encode(body), True)
+        rsp = await self.send_oidb_svc(0x9067, 202, proto_encode(body), reserved=1)
         temp = proto_decode(rsp.data).into((4, 1), dict[int, list[bytes]])
         return temp[0][1].decode(), temp[1][1].decode()
 
