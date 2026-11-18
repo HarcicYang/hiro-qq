@@ -193,6 +193,7 @@ class Client(BaseClient):
                 await self.send_uni_packet(
                     f"OidbSvcTrpcTcp.0x{cmd:0>2x}_{sub_cmd}",
                     OidbRequest(cmd=cmd, sub_cmd=sub_cmd, data=bytes(buf), reserved=reserved).encode(),
+                    send_only=False,
                     msg_type=msg_type,
                 )
             ).data
@@ -681,9 +682,14 @@ class Client(BaseClient):
         else:
             raise TypeError(userid[0])
 
-        rsp = GetInfoFromUidRsp.decode(
-            (await self.send_oidb_svc(0xFE1, sc, req, reserved=1 if sc == 2 else 0, msg_type=0 if sc == 2 else None)).data
+        resp = await self.send_oidb_svc(
+            0xFE1,
+            sc,
+            req,
+            reserved=1 if sc == 2 else 0,
+            msg_type=0 if sc == 2 else None,
         )
+        rsp = GetInfoFromUidRsp.decode(resp.data)
         if not rsp.body:
             raise AssertionError("Empty response")
         elif len(rsp.body) == 1:

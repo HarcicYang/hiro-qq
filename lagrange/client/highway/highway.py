@@ -310,19 +310,25 @@ class HighWaySession:
         )
 
     async def get_grp_img_url(self, grp_id: int, node: "IndexNode") -> str:
-        ret = NTV2RichMediaResp.decode(
-            (
-                await self._client.send_oidb_svc(0x11C4, 200, encode_grp_img_download_req(grp_id, node).encode(), reserved=1)
-            ).data
+        resp = await self._client.send_oidb_svc(
+            0x11C4,
+            200,
+            encode_grp_img_download_req(grp_id, node).encode(),
+            reserved=1,
         )
+        ret = NTV2RichMediaResp.decode(resp.data)
         body = ret.download
         assert body, "Internal error, check log for more detail"
         return f"https://{body.info.domain}{body.info.url_path}{body.rkey}"
 
     async def get_pri_img_url(self, uid: str, node: IndexNode) -> str:
-        ret = NTV2RichMediaResp.decode(
-            (await self._client.send_oidb_svc(0x11C5, 200, encode_pri_img_download_req(uid, node).encode(), reserved=1)).data
+        resp = await self._client.send_oidb_svc(
+            0x11C5,
+            200,
+            encode_pri_img_download_req(uid, node).encode(),
+            reserved=1,
         )
+        ret = NTV2RichMediaResp.decode(resp.data)
         body = ret.download
         assert body, "Internal error, check log for more detail"
         return f"https://{body.info.domain}{body.info.url_path}{body.rkey}"
@@ -541,7 +547,8 @@ class HighWaySession:
         file.seek(0)
 
         req = E37UploadReq.build(self._client.uid, uid, fl, file_name, md5_10m, fsha1, fmd5)
-        rsp = E37UploadRsp.decode((await self._client.send_oidb_svc(0xE37, 1700, req.encode(), reserved=1)).data)
+        reserved = int(self._client.is_android)
+        rsp = E37UploadRsp.decode((await self._client.send_oidb_svc(0xE37, 1700, req.encode(), reserved=reserved)).data)
         upload = rsp.upload
         if upload.ret_code:
             raise ConnectionError(upload.ret_code, upload.ret_msg)
@@ -681,7 +688,8 @@ class HighWaySession:
 
     async def send_group_file(self, grp_id: int, file_id: str):
         req = D9SendFileReq.build(grp_id, file_id)
-        rsp = await self._client.send_oidb_svc(0x6D9, 4, req.encode(), reserved=1)
+        reserved = int(self._client.is_android)
+        rsp = await self._client.send_oidb_svc(0x6D9, 4, req.encode(), reserved=reserved)
         if rsp.ret_code:
             raise AssertionError(rsp.ret_code, rsp.err_msg)
 
