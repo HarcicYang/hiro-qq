@@ -203,10 +203,6 @@ class BaseClient:
     def using_ipv6(self) -> bool:
         return self._network.using_v6
 
-    @property
-    def is_android(self) -> bool:
-        return self.app_info.os.casefold() == "android"
-
     @overload
     async def send_uni_packet(self, cmd: str, buf: bytes, *, timeout=10) -> SSOPacket: ...
 
@@ -333,7 +329,7 @@ class BaseClient:
     async def password_login(self, password: str) -> LoginErrorCode:
         md5_passwd = hashlib.md5(password.encode()).digest()
 
-        if self.is_android:
+        if self.app_info.os.casefold() == "android":
             return await self._android_password_login(md5_passwd)
 
         cr = CommonTlvBuilder().t106(
