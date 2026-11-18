@@ -58,9 +58,6 @@ SIGN_PKG_LIST = [
     "OidbSvcTrpcTcp.0xf67_1",
     "OidbSvcTrpcTcp.0xf67_5",
     "OidbSvcTrpcTcp.0x6d9_4",
-    "OidbSvcTrpcTcp.0xfe1_2",
-    "OidbSvcTrpcTcp.0xfe1_8",
-    "OidbSvcTrpcTcp.0xe37_1700",
     "trpc.login.ecdh.EcdhService.SsoQRLoginGenQr",
     "ConnAuthSvr.fast_qq_login",
     "ConnAuthSvr.sdk_auth_api",
@@ -174,6 +171,8 @@ def sign_provider(upstream_url: str, uin: int, guid: str, qua: str):
 
 class AndroidSignProvider:
     def __init__(self, upstream_url: str, uin: int, guid: str, qua: str, version: str, sdk_version: str = ""):
+        global SIGN_PKG_LIST
+        
         purl = parse.urlparse(upstream_url)
         self._token = purl.username or None
         netloc = (purl.hostname or "") + (f":{purl.port}" if purl.port else "")
@@ -183,6 +182,12 @@ class AndroidSignProvider:
         self._qua = qua
         self._version = version
         self._sdk_version = sdk_version
+        
+        SIGN_PKG_LIST = SIGN_PKG_LIST + [
+            "OidbSvcTrpcTcp.0xfe1_2",
+            "OidbSvcTrpcTcp.0xfe1_8",
+            "OidbSvcTrpcTcp.0xe37_1700",
+        ]
 
     def _headers(self) -> dict:
         headers = {"Content-Type": "application/json"}
