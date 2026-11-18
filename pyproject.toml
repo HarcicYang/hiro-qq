@@ -1,6 +1,6 @@
 [project]
 name = "hiro-qq"
-version = "0.1.9"
+version = "0.2.0"
 description = "An Python Implementation of NTQQ PC Protocol, orignates from lagrange-python"
 readme = "README.md"
 license = "LGPL-2.0-or-later"
