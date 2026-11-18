@@ -182,7 +182,7 @@ class AndroidSignProvider:
         self._qua = qua
         self._version = version
         self._sdk_version = sdk_version
-        
+
         SIGN_PKG_LIST = SIGN_PKG_LIST + [
             "OidbSvcTrpcTcp.0xfe1_2",
             "OidbSvcTrpcTcp.0xfe1_8",
