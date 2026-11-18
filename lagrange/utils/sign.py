@@ -172,7 +172,7 @@ def sign_provider(upstream_url: str, uin: int, guid: str, qua: str):
 class AndroidSignProvider:
     def __init__(self, upstream_url: str, uin: int, guid: str, qua: str, version: str, sdk_version: str = ""):
         global SIGN_PKG_LIST
-        
+
         purl = parse.urlparse(upstream_url)
         self._token = purl.username or None
         netloc = (purl.hostname or "") + (f":{purl.port}" if purl.port else "")
