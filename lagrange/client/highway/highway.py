@@ -249,7 +249,7 @@ class HighWaySession:
                         summary=summary,
                         biz_type=biz_type,
                     ).encode(),
-                    True,
+                    reserved=1,
                 )
             ).data
         )
@@ -310,19 +310,25 @@ class HighWaySession:
         )
 
     async def get_grp_img_url(self, grp_id: int, node: "IndexNode") -> str:
-        ret = NTV2RichMediaResp.decode(
-            (
-                await self._client.send_oidb_svc(0x11C4, 200, encode_grp_img_download_req(grp_id, node).encode(), True)
-            ).data
+        resp = await self._client.send_oidb_svc(
+            0x11C4,
+            200,
+            encode_grp_img_download_req(grp_id, node).encode(),
+            reserved=1,
         )
+        ret = NTV2RichMediaResp.decode(resp.data)
         body = ret.download
         assert body, "Internal error, check log for more detail"
         return f"https://{body.info.domain}{body.info.url_path}{body.rkey}"
 
     async def get_pri_img_url(self, uid: str, node: IndexNode) -> str:
-        ret = NTV2RichMediaResp.decode(
-            (await self._client.send_oidb_svc(0x11C5, 200, encode_pri_img_download_req(uid, node).encode(), True)).data
+        resp = await self._client.send_oidb_svc(
+            0x11C5,
+            200,
+            encode_pri_img_download_req(uid, node).encode(),
+            reserved=1,
         )
+        ret = NTV2RichMediaResp.decode(resp.data)
         body = ret.download
         assert body, "Internal error, check log for more detail"
         return f"https://{body.info.domain}{body.info.url_path}{body.rkey}"
@@ -340,7 +346,7 @@ class HighWaySession:
                     0x126E if gid else 0x126D,
                     100,
                     encode_audio_upload_req(gid, uid, fmd5, fsha1, fl, info.seconds).encode(),
-                    True,
+                    reserved=1,
                 )
             ).data
         )
@@ -438,7 +444,7 @@ class HighWaySession:
                     0x11EA if gid else 0x11E9,
                     100,
                     encode_video_upload_req(gid, uid, fmd5, fsha1, fl, tmd5, tsha1, tl, 0).encode(),
-                    True,
+                    reserved=1,
                 )
             ).data
         )
@@ -541,7 +547,7 @@ class HighWaySession:
         file.seek(0)
 
         req = E37UploadReq.build(self._client.uid, uid, fl, file_name, md5_10m, fsha1, fmd5)
-        rsp = E37UploadRsp.decode((await self._client.send_oidb_svc(0xE37, 1700, req.encode(), False)).data)
+        rsp = E37UploadRsp.decode((await self._client.send_oidb_svc(0xE37, 1700, req.encode(), reserved=0)).data)
         upload = rsp.upload
         if upload.ret_code:
             raise ConnectionError(upload.ret_code, upload.ret_msg)
@@ -611,7 +617,7 @@ class HighWaySession:
                 file_md5=fmd5,
             )
         )
-        rsp = D6Rsp.decode((await self._client.send_oidb_svc(0x6D6, 0, req.encode(), True)).data)
+        rsp = D6Rsp.decode((await self._client.send_oidb_svc(0x6D6, 0, req.encode(), reserved=1)).data)
         upload = rsp.upload
         if not upload or upload.ret_code:
             raise ConnectionError(upload.ret_code if upload else -1, upload.ret_msg if upload else "no upload")
@@ -670,7 +676,7 @@ class HighWaySession:
 
     async def get_group_file_url(self, grp_id: int, file_id: str) -> str:
         req = D6Req(download=D6Download(group_uin=grp_id, file_id=file_id))
-        rsp = D6Rsp.decode((await self._client.send_oidb_svc(0x6D6, 2, req.encode(), True)).data)
+        rsp = D6Rsp.decode((await self._client.send_oidb_svc(0x6D6, 2, req.encode(), reserved=1)).data)
         download = rsp.download
         if not download or download.ret_code:
             raise ConnectionError(
@@ -681,7 +687,7 @@ class HighWaySession:
 
     async def send_group_file(self, grp_id: int, file_id: str):
         req = D9SendFileReq.build(grp_id, file_id)
-        rsp = await self._client.send_oidb_svc(0x6D9, 4, req.encode(), False)
+        rsp = await self._client.send_oidb_svc(0x6D9, 4, req.encode(), reserved=0)
         if rsp.ret_code:
             raise AssertionError(rsp.ret_code, rsp.err_msg)
 

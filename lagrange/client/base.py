@@ -1,5 +1,6 @@
 import asyncio
 import hashlib
+import os
 import time
 from typing import overload
 from collections.abc import Callable
@@ -25,6 +26,7 @@ from .wtlogin.oicq import (
     build_uni_packet,
     decode_login_response,
 )
+from .wtlogin.tlv.android import AndroidTlvBuilder, generate_tlv548
 from .wtlogin.sso import SSOPacket
 from .wtlogin.status_service import (
     build_register_request,
@@ -205,12 +207,16 @@ class BaseClient:
     async def send_uni_packet(self, cmd: str, buf: bytes, *, timeout=10) -> SSOPacket: ...
 
     @overload
-    async def send_uni_packet(self, cmd: str, buf: bytes, send_only: Literal[False], timeout=10) -> SSOPacket: ...
+    async def send_uni_packet(
+        self, cmd: str, buf: bytes, send_only: Literal[False], timeout=10, *, msg_type: int | None = None
+    ) -> SSOPacket: ...
 
     @overload
-    async def send_uni_packet(self, cmd: str, buf: bytes, send_only: Literal[True], timeout=10) -> None: ...
+    async def send_uni_packet(
+        self, cmd: str, buf: bytes, send_only: Literal[True], timeout=10, *, msg_type: int | None = None
+    ) -> None: ...
 
-    async def send_uni_packet(self, cmd, buf, send_only: bool = False, timeout=10):
+    async def send_uni_packet(self, cmd, buf, send_only: bool = False, timeout=10, msg_type: int | None = None):
         seq = self.get_seq()
         sign = None
         if self._sign_provider:
@@ -224,6 +230,7 @@ class BaseClient:
             device_info=self.device_info,
             sig_info=self._sig,
             body=buf,
+            msg_type=msg_type,
         )
         if send_only:
             return await self._network.send(packet, wait_seq=-1, timeout=timeout)
@@ -322,6 +329,9 @@ class BaseClient:
     async def password_login(self, password: str) -> LoginErrorCode:
         md5_passwd = hashlib.md5(password.encode()).digest()
 
+        if self.app_info.os.casefold() == "android":
+            return await self._android_password_login(md5_passwd)
+
         cr = CommonTlvBuilder().t106(
             self.app_info.app_id,
             self.app_info.app_client_version,
@@ -343,6 +353,65 @@ class BaseClient:
         )
 
         return parse_ntlogin_response(packet.data, self._sig, self._captcha_info)
+
+    async def _android_password_login(self, md5_passwd: bytes) -> LoginErrorCode:
+        app = self.app_info
+        device = self.device_info
+        tgtgt_key = os.urandom(16)
+        self._sig.tgtgt = tgtgt_key
+
+        energy = b""
+        attach = b""
+        get_energy = getattr(self._sign_provider, "get_energy", None)
+        if get_energy is not None:
+            energy = await get_energy("810_9")
+        get_debug_xwid = getattr(self._sign_provider, "get_debug_xwid", None)
+        if get_debug_xwid is not None:
+            attach = await get_debug_xwid("810_9")
+
+        android_id = device.android_id or hashlib.md5(device.guid.encode()).hexdigest()[:16]
+        qimei = device.qimei or "QIMEI" + hashlib.md5(f"{device.guid}-qimei".encode()).hexdigest()
+
+        tlv = AndroidTlvBuilder()
+        body = (
+            PacketBuilder()
+            .write_u16(0x09)
+            .write_tlv(
+                tlv.t18_android(app, self.uin),
+                tlv.t1(self.uin),
+                tlv.t106_android(app, self.uin, md5_passwd, bytes.fromhex(device.guid), tgtgt_key),
+                tlv.t116(app.sub_sigmap),
+                tlv.t100_android(app, app.main_sigmap),
+                tlv.t107_android(),
+                tlv.t142(app.package_name),
+                tlv.t144_report(app, device, tgtgt_key, android_id),
+                tlv.t145(bytes.fromhex(device.guid)),
+                tlv.t147_android(app),
+                tlv.t154(),
+                tlv.t141_android(),
+                tlv.t8(),
+                tlv.t511(),
+                tlv.t187(),
+                tlv.t188(android_id),
+                tlv.t191(0x82),
+                tlv.t177_android(app.wtlogin_sdk),
+                tlv.t516(),
+                tlv.t521_android(),
+                tlv.t525(),
+                tlv.t544(energy),
+                tlv.t545(qimei),
+                tlv.t547(generate_tlv548()),
+                tlv.t553(attach),
+            )
+        ).pack()
+
+        packet = await self.send_uni_packet(
+            "wtlogin.login",
+            build_login_packet(self.uin, "wtlogin.login", app, body),
+        )
+        if decode_login_response(packet.data, self._sig):
+            return LoginErrorCode.success
+        return LoginErrorCode.unknown_error
 
     async def token_login(self, token: bytes) -> LoginErrorCode:
         packet = await self.send_uni_packet(
