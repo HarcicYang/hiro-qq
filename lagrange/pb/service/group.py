@@ -325,8 +325,8 @@ class GetGrpMemberInfoRspBody(ProtoStruct):
     f15: int | None = proto_field(15, default=None)
     f16: int | None = proto_field(16, default=None)
     # f20: int = proto_field(20)  # always 1
-    joined_time: int = proto_field(100)
-    last_seen: int = proto_field(101)
+    joined_time: int = proto_field(100, default=0)
+    last_seen: int = proto_field(101, default=0)
     f104: int | None = proto_field(104, default=None)
     f105: int | None = proto_field(105, default=None)
     f200: int | None = proto_field(200, default=None)
