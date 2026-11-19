@@ -264,6 +264,11 @@ async def parse_msg_new(
                 face_id = pb_elem.get(1)
                 if isinstance(face_id, int) and face_id > 0:
                     msg_chain.append(elems.Emoji(id=face_id))
+            if common.service_type == 37:
+                pb_elem = common.pb_elem or {}
+                face_id = pb_elem.get(3)
+                if isinstance(face_id, int) and face_id > 0:
+                    msg_chain.append(elems.Emoji(id=face_id))
             if common.service_type == 45:
                 md_c: bytes = common.pb_elem[1]
                 msg_chain.append(elems.Markdown(content=md_c.decode()))
