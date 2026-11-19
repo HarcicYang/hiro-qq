@@ -51,8 +51,10 @@ class PBGroupRenameRequest(ProtoStruct):
 
 class RenameMemberRequestF3(ProtoStruct):
     uid: str = proto_field(1)
-    name: str = proto_field(8, default="")
     special_title: str = proto_field(5, default="")
+    expire_time: int = proto_field(6, default=-1)
+    uid_name: str = proto_field(7, default="")
+    name: str = proto_field(8, default="")
 
 
 class PBRenameMemberRequest(ProtoStruct):
@@ -65,7 +67,9 @@ class PBRenameMemberRequest(ProtoStruct):
 
     @classmethod
     def build_for_title(cls, grp_id: int, target_uid: str, title: str) -> "PBRenameMemberRequest":
-        return cls(grp_id=grp_id, rename_f3=RenameMemberRequestF3(uid=target_uid, special_title=title))
+        return cls(
+            grp_id=grp_id, rename_f3=RenameMemberRequestF3(uid=target_uid, special_title=title, uid_name=title)
+        )
 
 
 class PBLeaveGroupRequest(ProtoStruct):
