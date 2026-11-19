@@ -382,7 +382,7 @@ async def parse_msg_new(
             msg_text = ""
 
             for v in src.elems:
-                if v.arg is not None:
+                if v and v.arg is not None:
                     msg_text += v.arg.text.decode(errors="replace")
             # src[10]: optional[grp_id]
             msg_chain.append(
