@@ -117,7 +117,18 @@ async def build_message(
                         )
                     )
             elif isinstance(msg, Emoji):
-                msg_pb.append(Elems(face=Face(index=msg.id)))
+                if msg.id >= 260:
+                    msg_pb.append(
+                        Elems(
+                            common_elem=CommonElem(
+                                service_type=33,
+                                pb_elem={1: msg.id},
+                                bus_type=1,
+                            )
+                        )
+                    )
+                else:
+                    msg_pb.append(Elems(face=Face(index=msg.id)))
             elif isinstance(msg, Json):
                 msg_pb.append(Elems(mini_app=MiniApp(template=b"\x01" + zlib.compress(msg.raw))))
             elif isinstance(msg, Image):
