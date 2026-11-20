@@ -67,9 +67,7 @@ class PBRenameMemberRequest(ProtoStruct):
 
     @classmethod
     def build_for_title(cls, grp_id: int, target_uid: str, title: str) -> "PBRenameMemberRequest":
-        return cls(
-            grp_id=grp_id, rename_f3=RenameMemberRequestF3(uid=target_uid, special_title=title, uid_name=title)
-        )
+        return cls(grp_id=grp_id, rename_f3=RenameMemberRequestF3(uid=target_uid, special_title=title, uid_name=title))
 
 
 class PBLeaveGroupRequest(ProtoStruct):
