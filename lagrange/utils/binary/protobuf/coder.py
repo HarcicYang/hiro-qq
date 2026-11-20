@@ -107,7 +107,7 @@ def _encode(builder: ProtoBuilder, tag: int, value: ProtoEncodable):
         if value >= 0:
             builder.write_varint(value)
         else:
-            raise NotImplementedError
+            builder.write_varint(value & 0xFFFFFFFF)
     elif wire_type == 1:
         raise NotImplementedError
     elif wire_type == 2:
