@@ -8,12 +8,10 @@ from lagrange.utils.binary.protobuf import proto_field, ProtoStruct
 class MemberChanged(ProtoStruct):
     uin: int = proto_field(1)
     uid: str = proto_field(3)
-    exit_type: int | None = proto_field(4, default=None)  # 3kick_me, 131kick, 130exit
+    # join: 130 by_other, 131 by_invite; quit: 3 kick_me, 131 kick, 130 exit
+    change_type: int | None = proto_field(4, default=None)
     operator_uid: str = proto_field(5, default="")
     join_type: int | None = proto_field(6, default=None)  # 6other, 0slef_invite
-    join_type_new: int | None = proto_field(
-        4, default=None
-    )  # 130 by_other(click url,scan qr,input grpid), 131 by_invite
 
 
 class MemberJoinRequest(ProtoStruct):

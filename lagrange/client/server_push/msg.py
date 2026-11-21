@@ -131,7 +131,7 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
         return GroupMemberJoined(
             grp_id=pb.uin,
             uid=pb.uid,  # right u cant get uin
-            join_type=pb.join_type_new or 0,
+            join_type=pb.change_type or 0,
         )
     elif typ == 34:  # member exit
         pb = MemberChanged.decode(buf2)
@@ -140,7 +140,7 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
             uin=pb.uin,
             uid=pb.uid,
             operator_uid=pb.operator_uid,
-            exit_type=pb.exit_type or 0,
+            exit_type=pb.change_type or 0,
         )
     elif typ == 84:
         pb = MemberJoinRequest.decode(buf2)
