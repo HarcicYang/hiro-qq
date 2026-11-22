@@ -132,6 +132,7 @@ async def msg_push_handler(client: "Client", sso: SSOPacket):
             grp_id=pb.uin,
             uid=pb.uid,  # right u cant get uin
             join_type=pb.change_type or 0,
+            operator_uid=pb.operator_uid,
         )
     elif typ == 34:  # member exit
         pb = MemberChanged.decode(buf2)

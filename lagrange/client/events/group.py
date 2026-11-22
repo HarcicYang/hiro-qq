@@ -91,6 +91,7 @@ class GroupMemberJoined(GroupEvent):
     # uin: int //it cant get
     uid: str
     join_type: int
+    operator_uid: str = ""
 
 
 @dataclass
