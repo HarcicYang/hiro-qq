@@ -169,6 +169,17 @@ def sign_provider(upstream_url: str, uin: int, guid: str, qua: str):
     return get_sign
 
 
+def _extract_hex(value: object) -> bytes:
+    while isinstance(value, dict):
+        value = value.get("value") or value.get("data") or value.get("hex")
+    if not isinstance(value, str) or not value:
+        return b""
+    try:
+        return bytes.fromhex(value)
+    except ValueError:
+        return b""
+
+
 class AndroidSignProvider:
     def __init__(self, upstream_url: str, uin: int, guid: str, qua: str, version: str, sdk_version: str = ""):
         global SIGN_PKG_LIST
@@ -220,7 +231,10 @@ class AndroidSignProvider:
                 },
             )
             value = rsp.get("value") or rsp.get("data")
-            return bytes.fromhex(value) if value else b""
+            energy = _extract_hex(value)
+            if not energy:
+                _logger.warning(f"unexpected energy response: {rsp}")
+            return energy
         except Exception:
             _logger.exception("get energy failed")
             return b""
@@ -238,7 +252,10 @@ class AndroidSignProvider:
                 },
             )
             value = rsp.get("value") or rsp.get("data")
-            return bytes.fromhex(value) if value else b""
+            attach = _extract_hex(value)
+            if not attach:
+                _logger.warning(f"unexpected tlv553 response: {rsp}")
+            return attach
         except Exception:
             _logger.exception("get tlv553 failed")
             return b""
