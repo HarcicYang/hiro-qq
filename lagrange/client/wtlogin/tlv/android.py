@@ -1,9 +1,11 @@
 import os
 from hashlib import md5, sha256
+from time import time
 
 from lagrange.client.packet import PacketBuilder
 from lagrange.info import AppInfo, DeviceInfo
 from lagrange.utils.binary.protobuf import proto_encode
+from lagrange.utils.binary.reader import Reader
 from lagrange.utils.crypto.tea import qqtea_encrypt
 from lagrange.utils.operator import timestamp
 
@@ -79,6 +81,49 @@ def generate_tlv548() -> bytes:
         .write_bytes(dst, "u16", False)
         .write_u32(0)
         .write_u32(10000)
+    ).pack()
+
+
+def generate_tlv547(tlv546: bytes) -> bytes:
+    reader = Reader(tlv546)
+    version = reader.read_u8()
+    typ = reader.read_u8()
+    hash_type = reader.read_u8()
+    ok = reader.read_u8() == 0
+    max_index = reader.read_u16()
+    reserved = reader.read_bytes(2)
+    src = reader.read_bytes(reader.read_u16())
+    tgt = reader.read_bytes(reader.read_u16())
+    cpy = reader.read_bytes(reader.read_u16())
+
+    if len(tgt) != 32:
+        raise ValueError("Only support SHA256 PoW")
+
+    num = int.from_bytes(src, "big")
+    started = time()
+    cnt = 0
+    while sha256(num.to_bytes(max(1, (num.bit_length() + 7) // 8), "big")).digest() != tgt:
+        num += 1
+        cnt += 1
+        if cnt > 6000000:
+            raise RuntimeError("Calculating PoW cost too much time, maybe something wrong")
+    elapsed = int((time() - started) * 1000)
+
+    dst = num.to_bytes(max(1, (num.bit_length() + 7) // 8), "big")
+    return (
+        PacketBuilder()
+        .write_u8(version)
+        .write_u8(typ)
+        .write_u8(hash_type)
+        .write_u8(1 if ok else 0)
+        .write_u16(max_index)
+        .write_bytes(reserved)
+        .write_bytes(src, "u16", False)
+        .write_bytes(tgt, "u16", False)
+        .write_bytes(cpy, "u16", False)
+        .write_bytes(dst, "u16", False)
+        .write_u32(elapsed)
+        .write_u32(cnt)
     ).pack()
 
 
@@ -267,3 +312,35 @@ class AndroidTlvBuilder(CommonTlvBuilder):
     @classmethod
     def t553(cls, attach: bytes) -> bytes:
         return cls().write_bytes(attach).pack(0x553)
+
+    @classmethod
+    def t104(cls, verification: bytes) -> bytes:
+        return cls().write_bytes(verification).pack(0x104)
+
+    @classmethod
+    def t174(cls, session: bytes) -> bytes:
+        return cls().write_bytes(session).pack(0x174)
+
+    @classmethod
+    def t17a(cls) -> bytes:
+        return cls().write_u32(9).pack(0x17A)
+
+    @classmethod
+    def t17c(cls, code: str) -> bytes:
+        return cls().write_string(code, "u16", False).pack(0x17C)
+
+    @classmethod
+    def t193(cls, ticket: bytes) -> bytes:
+        return cls().write_bytes(ticket).pack(0x193)
+
+    @classmethod
+    def t197(cls) -> bytes:
+        return cls().write_u8(0).pack(0x197)
+
+    @classmethod
+    def t198(cls) -> bytes:
+        return cls().write_u8(0).pack(0x198)
+
+    @classmethod
+    def t401(cls) -> bytes:
+        return cls().write_bytes(os.urandom(16)).pack(0x401)

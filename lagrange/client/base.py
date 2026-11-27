@@ -3,7 +3,7 @@ import hashlib
 import os
 import time
 from typing import overload
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from collections.abc import Coroutine
 
 from typing import Literal
@@ -25,8 +25,9 @@ from .wtlogin.oicq import (
     build_login_packet,
     build_uni_packet,
     decode_login_response,
+    decode_login_response_state,
 )
-from .wtlogin.tlv.android import AndroidTlvBuilder, generate_tlv548
+from .wtlogin.tlv.android import AndroidTlvBuilder, generate_tlv547, generate_tlv548
 from .wtlogin.sso import SSOPacket
 from .wtlogin.status_service import (
     build_register_request,
@@ -53,6 +54,7 @@ class BaseClient:
         sign_provider: Callable[[str, int, bytes], Coroutine[None, None, dict]] | None = None,
         use_ipv6: bool = True,
         uss_optimum: bool = True,
+        captcha_resolver: Callable[[str], Awaitable[tuple[str, str]]] | None = None,
     ):
         if uin and not sig_info.uin:
             sig_info.uin = uin
@@ -62,7 +64,13 @@ class BaseClient:
         self._app_info = app_info
         self._device_info = device_info
         self._heartbeat_interval = 120
-        self._captcha_info = ["", "", ""]  # ticket, rand_str, aid
+        self._captcha_info = ["", "", "", ""]
+        self._captcha_resolver = captcha_resolver
+        self._android_login_tlvs: dict[int, bytes] = {}
+        self._android_tlv547 = b""
+        self._android_captcha_url = ""
+        self._android_sms_phone = ""
+        self._android_sms_url = ""
 
         self._server_push_queue: asyncio.Queue[SSOPacket] = asyncio.Queue()
         self._tasks: dict[str, asyncio.Task] = {}
@@ -360,23 +368,16 @@ class BaseClient:
         tgtgt_key = os.urandom(16)
         self._sig.tgtgt = tgtgt_key
 
-        energy = b""
-        attach = b""
-        get_energy = getattr(self._sign_provider, "get_energy", None)
-        if get_energy is not None:
-            energy = await get_energy("810_9")
-        get_debug_xwid = getattr(self._sign_provider, "get_debug_xwid", None)
-        if get_debug_xwid is not None:
-            attach = await get_debug_xwid("810_9")
+        energy = await self._android_energy("810_9")
+        attach = await self._android_attach("810_9")
 
         android_id = device.android_id or hashlib.md5(device.guid.encode()).hexdigest()[:16]
         qimei = device.qimei or "QIMEI" + hashlib.md5(f"{device.guid}-qimei".encode()).hexdigest()
 
         tlv = AndroidTlvBuilder()
-        body = (
-            PacketBuilder()
-            .write_u16(0x09)
-            .write_tlv(
+        state, tlvs = await self._android_send(
+            0x09,
+            [
                 tlv.t18_android(app, self.uin),
                 tlv.t1(self.uin),
                 tlv.t106_android(app, self.uin, md5_passwd, bytes.fromhex(device.guid), tgtgt_key),
@@ -402,16 +403,106 @@ class BaseClient:
                 tlv.t545(qimei),
                 tlv.t547(generate_tlv548()),
                 tlv.t553(attach),
-            )
-        ).pack()
+            ],
+        )
+        return self._handle_android_state(state, tlvs)
 
+    async def _android_energy(self, data: str) -> bytes:
+        get_energy = getattr(self._sign_provider, "get_energy", None)
+        return await get_energy(data) if get_energy is not None else b""
+
+    async def _android_attach(self, data: str) -> bytes:
+        get_debug_xwid = getattr(self._sign_provider, "get_debug_xwid", None)
+        return await get_debug_xwid(data) if get_debug_xwid is not None else b""
+
+    async def _android_send(self, cmd: int, tlvs_list: list[bytes]) -> tuple[int, dict[int, bytes]]:
+        builder = PacketBuilder().write_u16(cmd)
+        for item in tlvs_list:
+            builder.write_bytes(item)
         packet = await self.send_uni_packet(
             "wtlogin.login",
-            build_login_packet(self.uin, "wtlogin.login", app, body),
+            build_login_packet(self.uin, "wtlogin.login", self.app_info, builder.pack()),
         )
-        if decode_login_response(packet.data, self._sig):
+        return decode_login_response_state(packet.data, self._sig)
+
+    def _handle_android_state(self, state: int, tlvs: dict[int, bytes]) -> LoginErrorCode:
+        if state == 0:
             return LoginErrorCode.success
+
+        if 0x104 in tlvs:
+            self._android_login_tlvs[0x104] = tlvs[0x104]
+        if 0x174 in tlvs:
+            self._android_login_tlvs[0x174] = tlvs[0x174]
+        if 0x546 in tlvs:
+            self._android_tlv547 = generate_tlv547(tlvs[0x546])
+
+        if state == 2:
+            self._android_captcha_url = tlvs.get(0x192, b"").decode(errors="ignore")
+            return LoginErrorCode.captcha_verify
+
+        if state in (160, 239):
+            if state == 239 and 0x178 in tlvs:
+                reader = Reader(tlvs[0x178])
+                country = reader.read_string(reader.read_u16())
+                phone = reader.read_string(reader.read_u16())
+                self._android_sms_phone = f"{country}-{phone}"
+            if 0x204 in tlvs:
+                self._android_sms_url = tlvs[0x204].decode(errors="ignore")
+            return LoginErrorCode.sms_required
+
+        if 0x146 in tlvs or 0x149 in tlvs:
+            error = tlvs.get(0x146) or tlvs[0x149]
+            reader = Reader(error)
+            reader.read_bytes(4 if 0x146 in tlvs else 2)
+            title = reader.read_string(reader.read_u16())
+            content = reader.read_string(reader.read_u16())
+            log.login.error(f"Login fail on android({state}): [{title}]>{content}")
+
         return LoginErrorCode.unknown_error
+
+    def _android_common_tlvs(self) -> list[bytes]:
+        tlvs = [AndroidTlvBuilder.t8()]
+        if 0x104 in self._android_login_tlvs:
+            tlvs.append(AndroidTlvBuilder.t104(self._android_login_tlvs[0x104]))
+        tlvs.append(AndroidTlvBuilder.t116(self.app_info.sub_sigmap))
+        if 0x174 in self._android_login_tlvs:
+            tlvs.append(AndroidTlvBuilder.t174(self._android_login_tlvs[0x174]))
+        return tlvs
+
+    async def submit_android_captcha(self, ticket: str) -> LoginErrorCode:
+        tlvs = [
+            AndroidTlvBuilder.t193(ticket.encode()),
+            *self._android_common_tlvs(),
+        ]
+        if self._android_tlv547:
+            tlvs.append(AndroidTlvBuilder.t547(self._android_tlv547))
+        tlvs.append(AndroidTlvBuilder.t544(await self._android_energy("810_2")))
+        tlvs.append(AndroidTlvBuilder.t553(await self._android_attach("810_2")))
+
+        state, rsp = await self._android_send(0x02, tlvs)
+        return self._handle_android_state(state, rsp)
+
+    async def fetch_android_sms_code(self) -> LoginErrorCode:
+        tlvs = [
+            *self._android_common_tlvs(),
+            AndroidTlvBuilder.t17a(),
+            AndroidTlvBuilder.t197(),
+            AndroidTlvBuilder.t553(await self._android_attach("810_8")),
+        ]
+        state, rsp = await self._android_send(0x08, tlvs)
+        return self._handle_android_state(state, rsp)
+
+    async def submit_android_sms_code(self, code: str) -> LoginErrorCode:
+        tlvs = [
+            *self._android_common_tlvs(),
+            AndroidTlvBuilder.t17c(code),
+            AndroidTlvBuilder.t401(),
+            AndroidTlvBuilder.t198(),
+            AndroidTlvBuilder.t544(await self._android_energy("810_7")),
+            AndroidTlvBuilder.t553(await self._android_attach("810_7")),
+        ]
+        state, rsp = await self._android_send(0x07, tlvs)
+        return self._handle_android_state(state, rsp)
 
     async def token_login(self, token: bytes) -> LoginErrorCode:
         packet = await self.send_uni_packet(

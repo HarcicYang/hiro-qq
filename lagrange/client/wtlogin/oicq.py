@@ -131,7 +131,7 @@ def build_uni_packet(
     return PacketBuilder().write_bytes(service, "u32").pack()
 
 
-def decode_login_response(buf: bytes, sig: SigInfo):
+def decode_login_response_state(buf: bytes, sig: SigInfo) -> tuple[int, dict[int, bytes]]:
     reader = Reader(buf)
     reader.read_bytes(2)
     typ = reader.read_u8()
@@ -157,6 +157,13 @@ def decode_login_response(buf: bytes, sig: SigInfo):
         log.login.debug("SigInfo got")
         log.login.info(f"Login success, username: {tlv[0x11A][5:].decode()}")
 
+    return typ, tlv
+
+
+def decode_login_response(buf: bytes, sig: SigInfo):
+    typ, tlv = decode_login_response_state(buf, sig)
+
+    if typ == 0:
         return True
     elif 0x146 in tlv:
         err_buf = Reader(tlv[0x146])

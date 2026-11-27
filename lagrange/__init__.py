@@ -5,6 +5,7 @@ from typing import Literal
 from collections.abc import Callable, Awaitable
 import asyncio
 
+from .client.captcha import OnlineCaptchaResolver
 from .client.client import Client as Client
 
 # from .client.server_push.msg import msg_push_handler
@@ -33,6 +34,8 @@ class Lagrange:
         fetch_appinfo: bool = False,
         custom_sign_provider: Callable[[int, str, str, str], Callable[[str, int, bytes], Awaitable[dict | None]]]
         | None = None,
+        captcha_service: str | None = "https://captcha.bocchi.top",
+        captcha_resolver: Callable[[str], Awaitable[tuple[str, str]]] | None = None,
     ):
         self.im = InfoManager(uin, device_info_path, signinfo_path)
         self.uin = uin
@@ -46,6 +49,8 @@ class Lagrange:
         self.use_ipv6 = use_ipv6
         self.use_optimum = use_optimum
         self._fetch_appinfo = fetch_appinfo
+        self._captcha_service = captcha_service
+        self._captcha_resolver = captcha_resolver
 
     def subscribe(self, event, handler):
         self.events[event] = handler
@@ -102,7 +107,19 @@ class Lagrange:
                     )
             else:
                 log.root.warning("none of custom_sign_provider or sign_url provided, continue with no sign")
-            self.client = Client(self.uin, app_info, im.device, im.sig_info, self.sign, self.use_ipv6, self.use_optimum)
+            captcha_resolver = self._captcha_resolver
+            if captcha_resolver is None and self._captcha_service:
+                captcha_resolver = OnlineCaptchaResolver(self._captcha_service, self.uin)
+            self.client = Client(
+                self.uin,
+                app_info,
+                im.device,
+                im.sig_info,
+                self.sign,
+                self.use_ipv6,
+                self.use_optimum,
+                captcha_resolver,
+            )
             for event, handler in self.events.items():
                 self.client.events.subscribe(event, handler)
             self.client.connect()

@@ -29,6 +29,7 @@ class LoginErrorCode(IntEnum):
     wrong_argument = 140022001
     new_device_verify = 140022010
     captcha_verify = 140022008
+    sms_required = 160
     unknown_error = -1
     success = 0
 

@@ -37,9 +37,9 @@ def build_ntlogin_request(
 
     if sig.cookies:
         body[1][5] = {1: sig.cookies}
-    if all(captcha):
+    if all(captcha[:3]):
         log.login.debug("login with captcha info")
-        body[2][2] = build_ntlogin_captcha_submit(*captcha)
+        body[2][2] = build_ntlogin_captcha_submit(*captcha[:3])
 
     return proto_encode({1: sig.key_sig, 3: aes_gcm_encrypt(proto_encode(body), sig.exchange_key), 4: 1})
 
@@ -75,6 +75,8 @@ def parse_ntlogin_response(response: bytes, sig: SigInfo, captcha: list) -> Logi
             verify_url = verify.url
             aid = verify_url.split("&sid=")[1].split("&")[0]
             captcha[2] = aid
+            if len(captcha) > 3:
+                captcha[3] = verify_url
             log.login.warning("need captcha verify: " + verify_url)
         else:
             title = error.title
