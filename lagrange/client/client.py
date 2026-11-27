@@ -10,7 +10,7 @@ from typing import (
     TYPE_CHECKING,
     cast,
 )
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from collections.abc import Coroutine
 
 from lagrange.info import AppInfo, DeviceInfo, SigInfo
@@ -108,8 +108,9 @@ class Client(BaseClient):
         sign_provider: Callable[[str, int, bytes], Coroutine[None, None, dict]] | None = None,
         use_ipv6: bool = True,
         use_optimum: bool = True,
+        captcha_resolver: Callable[[str], Awaitable[tuple[str, str]]] | None = None,
     ):
-        super().__init__(uin, app_info, device_info, sig_info, sign_provider, use_ipv6, use_optimum)
+        super().__init__(uin, app_info, device_info, sig_info, sign_provider, use_ipv6, use_optimum, captcha_resolver)
 
         self._events = Events()
         self._push_deliver = PushDeliver(self)
@@ -167,11 +168,11 @@ class Client(BaseClient):
 
                 if rsp == LoginErrorCode.captcha_verify:
                     if android:
-                        log.root.warning(f"captcha required, url: {self._android_captcha_url}")
-                        rsp = await self.submit_android_captcha(input("ticket?->"))
+                        ticket = await self._resolve_captcha_ticket(self._android_captcha_url)
+                        rsp = await self.submit_android_captcha(ticket)
                     else:
-                        log.root.warning("captcha verification required")
-                        self.submit_login_captcha(ticket=input("ticket?->"), rand_str=input("rand_str?->"))
+                        ticket, rand_str = await self._resolve_captcha(self._captcha_info[3])
+                        self.submit_login_captcha(ticket=ticket, rand_str=rand_str)
                         rsp = await self.password_login(password)
                 elif rsp == LoginErrorCode.sms_required:
                     if self._android_sms_phone:
@@ -202,6 +203,19 @@ class Client(BaseClient):
                 if await self.qrcode_login(3):
                     return await self.register()
         return False
+
+    async def _resolve_captcha(self, url: str) -> tuple[str, str]:
+        if self._captcha_resolver is not None and url:
+            return await self._captcha_resolver(url)
+        log.root.warning(f"captcha verification required, url: {url}")
+        return input("ticket?->"), input("rand_str?->")
+
+    async def _resolve_captcha_ticket(self, url: str) -> str:
+        if self._captcha_resolver is not None and url:
+            ticket, _ = await self._captcha_resolver(url)
+            return ticket
+        log.root.warning(f"captcha required, url: {url}")
+        return input("ticket?->")
 
     async def send_oidb_svc(
         self, cmd: int, sub_cmd: int, buf: bytes, reserved: int = 0, msg_type: int | None = None

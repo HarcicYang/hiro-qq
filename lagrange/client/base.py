@@ -3,7 +3,7 @@ import hashlib
 import os
 import time
 from typing import overload
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from collections.abc import Coroutine
 
 from typing import Literal
@@ -54,6 +54,7 @@ class BaseClient:
         sign_provider: Callable[[str, int, bytes], Coroutine[None, None, dict]] | None = None,
         use_ipv6: bool = True,
         uss_optimum: bool = True,
+        captcha_resolver: Callable[[str], Awaitable[tuple[str, str]]] | None = None,
     ):
         if uin and not sig_info.uin:
             sig_info.uin = uin
@@ -63,7 +64,8 @@ class BaseClient:
         self._app_info = app_info
         self._device_info = device_info
         self._heartbeat_interval = 120
-        self._captcha_info = ["", "", ""]  # ticket, rand_str, aid
+        self._captcha_info = ["", "", "", ""]
+        self._captcha_resolver = captcha_resolver
         self._android_login_tlvs: dict[int, bytes] = {}
         self._android_tlv547 = b""
         self._android_captcha_url = ""
